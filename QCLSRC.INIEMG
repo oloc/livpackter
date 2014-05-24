@@ -1,0 +1,26 @@
+/*********************************************************************/
+/* Programme de suppression des sauvegardes d'Emergency              */
+/*                                                                   */
+/* Programme appelant : MEPINI                                       */
+/*                                                                   */
+/* Olivier Locard - Prolival - 09/10/06                              */
+/* OLOC 08/03/07 Nouveau format des historiques                      */
+/*********************************************************************/
+             PGM
+
+             DCL        VAR(&RTNLIB) TYPE(*CHAR) LEN(10)
+
+             /* Historisation                                        */
+             CALL       PGM(UPDHST) PARM('INI0140' ' ')
+
+             /* On prend la *LIB de ce programme comme LIB a purger  */
+             RTVOBJD    OBJ(INIEMG) OBJTYPE(*PGM) RTNLIB(&RTNLIB)
+             /* Suppression des sauvegardes d'Emergency              */
+             SNDPGMMSG  MSG('Suppression des sauvegardes d''Emergency')
+             DLTF       FILE(&RTNLIB/EMG*)
+             MONMSG     MSGID(CPF2125)
+
+             /* Historisation                                        */
+             CALL       PGM(UPDHST) PARM('INI0240' ' ')
+
+             ENDPGM

@@ -1,0 +1,44 @@
+/*********************************************************************/
+/* Sauvegarde de la *LIB tampon dans un savf.                        */
+/* Cette manoeuvre garantit une sécurité et une intégrité des données*/
+/*                                                                   */
+/* Olivier Locard - Prolival - 04/03/05                              */
+/* MOD OLOC 21/04/05 Passage du trigramme du nom de savf en param.   */
+/* MOD OLOC 29/11/05 Ajout des commentaires pour le pilotage         */
+/*********************************************************************/
+             PGM        PARM(&BLNAME &TRI)
+
+             DCL        VAR(&BLNAME) TYPE(*CHAR) LEN(10)
+             DCL        VAR(&CRTLIB) TYPE(*CHAR) LEN(10)
+             DCL        VAR(&SVNAME) TYPE(*CHAR) LEN(10)
+             DCL        VAR(&TMPLIB) TYPE(*CHAR) LEN(10)
+             DCL        VAR(&TRI) TYPE(*CHAR) LEN(3)
+
+             RTVDTAARA  DTAARA(MEPPRM (1 10)) RTNVAR(&TMPLIB)
+
+/*********************************************************************/
+/* Message pour faciliter la maintenance, le debug et le pilotage    */
+/*********************************************************************/
+            SNDPGMMSG  MSG('### Début de la sauvegarde des objets de' +
+                          *BCAT &BLNAME *BCAT 'de la bibliothèque +
+                          tampon' *BCAT &TMPLIB *BCAT '. ###')
+
+             /* Récupération de la *LIB où créer le fichier en +
+                prenant appui sur la *LIB où est le MEPPKGPF         */
+             CALL       PGM(DSPPFD) PARM('MEPPKGPF' &CRTLIB)
+
+             CHGVAR     VAR(&SVNAME) VALUE(&TRI *TCAT %SST(&BLNAME 4 +
+                          7))
+ CRTSAVF:    CRTSAVF    FILE(&CRTLIB/&SVNAME)
+
+ SAVLIB:     SAVLIB     LIB(&TMPLIB) DEV(*SAVF) SAVF(&SVNAME)
+
+/*********************************************************************/
+/* Message pour faciliter la maintenance, le debug et le pilotage    */
+/*********************************************************************/
+             SNDPGMMSG  MSG('### Fin de la sauvegarde des objets de' +
+                          *BCAT &BLNAME *BCAT 'de la bibliothèque +
+                          tampon' *BCAT &TMPLIB *BCAT 'dans le +
+                          SAVF' *BCAT &SVNAME *BCAT '. ###')
+
+             ENDPGM

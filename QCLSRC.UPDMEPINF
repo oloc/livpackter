@@ -1,0 +1,57 @@
+/*********************************************************************/
+/* Récupération des informations liées à la mise en production       */
+/* Le tout est mis dans la Data Area MEPINF ainsi "découpée" :       */
+/*                                                                   */
+/* 01 10 Nom du bon de livraison                                     */
+/* 11 06 Numéro du job                                               */
+/* 17 10 Utilisateur du job                                          */
+/* 27 10 Nom du job                                                  */
+/* 37 10 Nom du job soumettant                                       */
+/* 47 10 Nom de l'utilisateur soumettant                             */
+/* 57 10 Nom de la msgq de la soumission                             */
+/* 67 10 Nom de la *LIB de la msgq de la soumission                  */
+/* 77 08 La date au format YYYYMMDD                                  */
+/* 85 08 L'heure au format HHMMSSDD                                  */
+/* 93 03 Code CEX de l'application                                   */
+/* 96 01 Type de job (interactif, batch...)                          */
+/*                                                                   */
+/* Programme appelant : MEPPRC                                       */
+/*                                                                   */
+/* Olivier Locard - Prolival - 07/08/07                              */
+/*********************************************************************/
+             PGM        PARM(&BLNAME)
+
+             /* Variables passées en paramètre                       */
+             DCL        VAR(&BLNAME) TYPE(*CHAR) LEN(10)
+
+/*********************************************************************/
+/* Création de la data aera MEPINF qui contiendra toutes les infos   */
+/*********************************************************************/
+             CHKOBJ     OBJ(QTEMP/MEPINF) OBJTYPE(*DTAARA)
+             MONMSG     MSGID(CPF9801) EXEC(DO)
+ CRTDTAARA:  CRTDTAARA  DTAARA(QTEMP/MEPINF) TYPE(*CHAR) LEN(2000) +
+                        VALUE(' ')
+             ENDDO
+
+/*********************************************************************/
+/* Mise à jour du nom du Bon de livraison                            */
+/*********************************************************************/
+             CALL       PGM(UPDPKGINF) PARM(&BLNAME)
+
+/*********************************************************************/
+/* Mise à jour des informations concernant le job                    */
+/*********************************************************************/
+             CALL       PGM(UPDJOBINF)
+
+/*********************************************************************/
+/* Mise à jour de la date et l'heure                                 */
+/*********************************************************************/
+             CALL       PGM(UPDDAT)
+             CALL       PGM(UPDTIM)
+
+/*********************************************************************/
+/* Mise à jour du code CEX de l'application                          */
+/*********************************************************************/
+             CALL       PGM(UPDAPPINF) PARM(&BLNAME)
+
+ FIN:        ENDPGM

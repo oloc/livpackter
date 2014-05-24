@@ -1,0 +1,69 @@
+/*********************************************************************/
+/* Retour arrière des composants de l'emergency.                     */
+/* Ils sont restaurés dans la lib tampon puis remis en Emergency     */
+/*                                                                   */
+/* Olivier Locard - Prolival - 21/04/05                              */
+/* MOD : OLOC 13/10/05 MODIFICATION DU MEPPKGPF                      */
+/*********************************************************************/
+             PGM        PARM(&BLNAME)
+
+             DCL        VAR(&BLNAME) TYPE(*CHAR) LEN(10)
+             DCL        VAR(&DATA) TYPE(*CHAR) LEN(4)
+             DCL        VAR(&SVNAME) TYPE(*CHAR) LEN(10)
+             DCL        VAR(&TMPLIB) TYPE(*CHAR) LEN(10)
+
+             DCLF       FILE(MEPPKGPF)
+             OVRDBF     FILE(MEPPKGPF) MBR(&BLNAME)
+
+/*********************************************************************/
+/* Restauration des éléments qui étaient en EMG lors de la MEP       */
+/*********************************************************************/
+             RTVDTAARA  DTAARA(MEPPRM (1 10)) RTNVAR(&TMPLIB)
+             /* Purge de la tampon de ses composants                 */
+             CLRLIB     LIB(&TMPLIB)
+             /* Restauration des anciens composants dans la tampon   */
+             CHGVAR     VAR(&SVNAME) VALUE('EMG' *TCAT %SST(&BLNAME +
+                          4 7))
+             RSTOBJ     OBJ(*ALL) SAVLIB(&TMPLIB) DEV(*SAVF) +
+                          SAVF(&SVNAME)
+             MONMSG     MSGID(CPF3770) EXEC(GOTO CMDLBL(FIN))
+
+/*********************************************************************/
+/* Boucle de lecture du BL afin de déplacer les composants           */
+/*********************************************************************/
+ BOUCLE:     RCVF
+             MONMSG     MSGID(CPF0864) EXEC(GOTO CMDLBL(FIN))
+
+             /* Déplacement du source de l'objet lu dans le BL       */
+             CALL       PGM(MEPMOVSRC) PARM(&TMPLIB &DETFIL    +
+                          &DETSRC    &EMGLIB &DETFIL    &DETSRC   )
+
+             /* Dans le cas d'un code objet sans objet      19/04/05 */
+             IF         COND(&DETTPE *EQ ' ') THEN(GOTO CMDLBL(BOUCLE))
+
+             CHGVAR     VAR(&DATA) VALUE('*NO')
+             IF         COND((&DETTPE *EQ '*FILE') *AND (&DETATR *EQ +
+                          'PF')) THEN(DO)
+             CHGVAR     VAR(&DATA) VALUE('*YES')
+             ENDDO
+
+             /* Vérification de la restauration du composant         */
+             CHKOBJ     OBJ(&TMPLIB/&DETMBR) OBJTYPE(&DETTPE)
+             MONMSG CPF9801 EXEC(DO)
+             SNDPGMMSG  MSG('*** Objet :' *BCAT &DETMBR *BCAT 'de la +
+                          bibliothèque' *BCAT &TMPLIB *BCAT 'de +
+                          type' *BCAT &DETTPE *BCAT 'n''a pas été +
+                          trouvé. ***')
+             GOTO       CMDLBL(BOUCLE)
+             ENDDO
+             /* Mise en production du composant                      */
+             CRTDUPOBJ  OBJ(&DETMBR) FROMLIB(&TMPLIB) +
+                          OBJTYPE(&DETTPE) TOLIB(&EMGLIB) DATA(&DATA)
+
+             /* Changement de propriétaire                           */
+             CHGOBJOWN  OBJ(&EMGLIB/&DETMBR) OBJTYPE(&DETTPE) +
+                          NEWOWN(&DOBOWN)
+
+             GOTO       CMDLBL(BOUCLE)
+
+ FIN:        ENDPGM

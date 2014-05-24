@@ -1,0 +1,36 @@
+/*********************************************************************/
+/* Remise en état d'un Bon de livraison. C'est-à-dire passer de      */
+/* l'archivage à l'état "à traiter".                                 */
+/*                                                                   */
+/* Programmes appelants : MEPMNU, CHKPKGLCK, DLTSCDMEP               */
+/*                                                                   */
+/* Olivier Locard - Prolival - 28/12/05                              */
+/* OLOC 09/03/07 Nouveau format des historiques                      */
+/*********************************************************************/
+             PGM        PARM(&BLNAME)
+
+             DCL        VAR(&BLNAME) TYPE(*CHAR) LEN(10)
+             DCL        VAR(&CRTLIB) TYPE(*CHAR) LEN(10)
+
+             /* Historisation du début de l'opération                */
+             CALL       PGM(UPDHST) PARM('BKP0160' &BLNAME)
+
+             /* Récupération de la *LIB du MEPPKGPF                  */
+             CALL       PGM(DSPPFD) PARM('MEPPKGPF' &CRTLIB)
+             SNDPGMMSG  MSG('*** Bibliotèque de création : ' *BCAT +
+                          &CRTLIB *BCAT '***')
+             /* Remise en l'état de BL le package au niv des LI      */
+             OVRDBF     FILE(MEPPKGPF) MBR(&BLNAME)
+             CALL       PGM(BKPSCDMEP2)
+             DLTOVR     FILE(MEPPKGPF)
+             /* Copie pour remettre l'archivage en BL                */
+             CPYF       FROMFILE(MEPPKGPF) TOFILE(&CRTLIB/&BLNAME) +
+                          FROMMBR(&BLNAME) TOMBR(&BLNAME) +
+                          MBROPT(*REPLACE) CRTFILE(*YES)
+             /* On le retire du stock de BL                          */
+             RMVM       FILE(MEPPKGPF) MBR(&BLNAME)
+
+             /* Historisation de la fin de l'opération               */
+             CALL       PGM(UPDHST) PARM('BKP0260' &BLNAME)
+
+             ENDPGM

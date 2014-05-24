@@ -1,0 +1,23 @@
+     H**********************************************************************
+     H* Mise à jour d'une lib liste pour une catégorie d'utilisateur
+     H*
+     H* Christophe CAGNE - 26/01/06
+     H**********************************************************************
+     FUSRHUBDEV IF A E           K DISK
+     FLIBLIST   UF A E             DISK    RENAME(LIBLIST:LIBLISTR)
+     C*
+     C                   READ      USRCOM
+     C                   DOW       NOT %EOF
+     C*
+     C     *START        SETLL     LIBLIST
+     C                   READ      LIBLISTR
+     C                   DOW       NOT %EOF
+     C                   MOVE      PROFIL        LBENNM
+     C                   UPDATE    LIBLISTR
+     C                   READ      LIBLISTR
+     C                   ENDDO
+     C                   CALL      'CPYFLIBL'
+     C*
+     C                   READ      USRCOM
+     C                   ENDDO
+     C                   SETON                                            LR

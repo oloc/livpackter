@@ -1,0 +1,48 @@
+/*********************************************************************/
+/* Avertissement par SNDBRKMSG et dans la MSGQ que la MEP/BKP ne peut*/
+/* s'effectuer dans la mesure où des objets qui devaient être        */
+/* relivrés sont actuellement alloués.                               */
+/*                                                                   */
+/* Programme appelant : CHKPKGLCK                                    */
+/*                                                                   */
+/* Olivier Locard - Prolival 30/12/05                                */
+/* OLOC 09/03/07 Utilisation de la Dtaara d'informations MEPINF      */
+/*********************************************************************/
+             PGM
+
+             DCL        VAR(&BLNAME) TYPE(*CHAR) LEN(10)
+             DCL        VAR(&MSG) TYPE(*CHAR) LEN(200)
+             DCL        VAR(&SBMJOB) TYPE(*CHAR) LEN(10)
+             DCL        VAR(&SBMMSGQ) TYPE(*CHAR) LEN(10)
+             DCL        VAR(&SBMMSGQLIB) TYPE(*CHAR) LEN(10)
+
+/*********************************************************************/
+/* Récupération des informations dans la dtaara                      */
+/*********************************************************************/
+             RTVDTAARA  DTAARA(MEPINF (01 10)) RTNVAR(&BLNAME)
+             RTVDTAARA  DTAARA(MEPINF (37 10)) RTNVAR(&SBMJOB)
+             RTVDTAARA  DTAARA(MEPINF (57 10)) RTNVAR(&SBMMSGQ)
+             RTVDTAARA  DTAARA(MEPINF (67 10)) RTNVAR(&SBMMSGQLIB)
+
+/*********************************************************************/
+/* Constitution du message d'avertissement à envoyer                 */
+/*********************************************************************/
+             CHGVAR     VAR(&MSG) VALUE('*** IMPOSSIBLE de traiter +
+                          le package' *BCAT &BLNAME *TCAT ', car +
+                          certain de ses objets sont alloués en +
+                          production. Veuillez consulter +
+                          l''historique Livpackter MEPHSTPF pour +
+                          obtenir la liste exhaustive. Une fois les +
+                          allocations gérées, le package pourra +
+                          être relivré. ***')
+
+/*********************************************************************/
+/* Envoi des messages                                                */
+/*********************************************************************/
+             SNDBRKMSG  MSG(&MSG) TOMSGQ(&SBMJOB)
+             SNDMSG     MSG(&MSG) TOUSR(&SBMMSGQ)
+
+/*********************************************************************/
+/* Fin de programme                                                  */
+/*********************************************************************/
+ FIN:        ENDPGM

@@ -1,0 +1,56 @@
+/*********************************************************************/
+/* Vérification de présence des objets d'un BL sur le quai idoine    */
+/*                                                                   */
+/* Programme appelant : CHKPKG                                       */
+/*                                                                   */
+/* Olivier Locard - Prolival - 27/07/07                              */
+/* OLOC 21/08/07 Ajout du test de type d'objet                       */
+/* OLOC 01/10/07 Ajout du test des objets en suppression             */
+/*********************************************************************/
+             PGM        PARM(&BLNAME)
+
+             DCL        VAR(&BLNAME) TYPE(*CHAR) LEN(10)
+             DCL        VAR(&MSGDTA) TYPE(*CHAR) LEN(132) VALUE(' ')
+             DCL        VAR(&MSGFIN) TYPE(*CHAR) LEN(7) +
+                        VALUE('CHK0105')
+             DCL        VAR(&MSGID)  TYPE(*CHAR) LEN(7)
+
+             DCLF       FILE(MEPPKGPF)
+
+             OVRDBF     FILE(MEPPKGPF) TOFILE(&BLNAME)
+ BOUCLE:     RCVF
+             MONMSG     MSGID(CPF0864) EXEC(GOTO CMDLBL(FINBOUCLE))
+
+             /* Vérification que l'objet n'est pas en suppression    */
+             IF         COND(&DETACT *EQ '3') THEN(GOTO CMDLBL(BOUCLE))
+
+             /* Vérification de présence de l'objet avec type        */
+             IF         COND((&DETLIB *NE '*NONE')  *AND +
+                             (&DETMBR *NE '*NONE')  *AND +
+                             (&DETTPE *NE '     ')) THEN(DO)
+             CHKOBJ     OBJ(&DETLIB/&DETMBR) OBJTYPE(&DETTPE)
+             MONMSG     MSGID(CPF0000) EXEC(DO)
+             RCVMSG     MSGTYPE(*LAST) MSGDTA(&MSGDTA) MSGID(&MSGID)
+             CALL       PGM(UPDHST) PARM(&MSGID &MSGDTA)
+             CHGVAR     VAR(&MSGDTA) VALUE(' ')
+             CHGVAR     VAR(&MSGFIN) VALUE('CHK1005')
+             ENDDO
+             ENDDO
+
+             /* Vérification de présence du source                   */
+             IF         COND((&DETSRL *NE '*NONE')  *AND +
+                             (&DETFIL *NE '*NONE')) THEN(DO)
+             CHKOBJ     OBJ(&DETSRL/&DETFIL) OBJTYPE(*FILE) +
+                          MBR(&DETSRC)
+             MONMSG     MSGID(CPF0000) EXEC(DO)
+             RCVMSG     MSGTYPE(*LAST) MSGDTA(&MSGDTA) MSGID(&MSGID)
+             CALL       PGM(UPDHST) PARM(&MSGID &MSGDTA)
+             CHGVAR     VAR(&MSGDTA) VALUE(' ')
+             CHGVAR     VAR(&MSGFIN) VALUE('CHK1005')
+             ENDDO
+             ENDDO
+
+             GOTO       CMDLBL(BOUCLE)
+
+ FINBOUCLE:  SNDPGMMSG  MSGID(&MSGFIN) MSGF(MEPMSGF) MSGDTA(&BLNAME)
+             ENDPGM

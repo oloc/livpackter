@@ -1,0 +1,40 @@
+/*********************************************************************/
+/* Programme qui regroupe les deux étapes suivantes :                */
+/* 1 _ Déplacement des composants vers la tampon                     */
+/* 2 _ Sauvegarde de la tampon                                       */
+/*                                                                   */
+/* Le trigramme sert de préfixe pour les sauvegardes et pour savoir  */
+/* si c'est un déplacement depuis la prod' ou l'Emg.                 */
+/*                                                                   */
+/* Programme appelant : MEPPRC                                       */
+/*                                                                   */
+/* Olivier Locard - Prolival - 29/11/05                              */
+/* OLOC 12/07/06 Historisation des début et fin                      */
+/* OLOC 30/10/06 Remplacement du MEPMOVOBJ par le MEPMOVTMP          */
+/* OLOC 09/03/07 Nouveau format des historiques                      */
+/*********************************************************************/
+             PGM        PARM(&BLNAME &TRI)
+
+             DCL        VAR(&BLNAME) TYPE(*CHAR) LEN(10)
+             DCL        VAR(&TRI)    TYPE(*CHAR) LEN(3)
+             DCL        VAR(&MSGDTA) TYPE(*CHAR) LEN(132) VALUE(' ')
+
+             /* Historisation du début de l'opération       12/07/06 */
+             CHGVAR     VAR(&MSGDTA) VALUE(' ')
+             CHGVAR     VAR(%SST(&MSGDTA 01 10)) VALUE(&BLNAME)
+             CHGVAR     VAR(%SST(&MSGDTA 11 03)) VALUE(&TRI)
+             CHGVAR     VAR(%SST(&MSGDTA 14 07)) +
+                        VALUE(%SST(&BLNAME 04 07))
+             CALL       PGM(UPDHST) PARM('MEP0130' &MSGDTA)
+
+             /* Déplacement des objets de prod (ou Emg) => tampon    */
+/* 30/10/06  CALL       PGM(MEPMOVOBJ) PARM(&BLNAME &TRI)            */
+             CALL       PGM(MEPMOVTMP) PARM(&BLNAME &TRI)
+             /* Création de savf et save de la lib tampon            */
+             CALL       PGM(MEPSAVF) PARM(&BLNAME &TRI)
+
+             /* Historisation du début de l'opération       12/07/06 */
+             CHGVAR     VAR(&MSGDTA) VALUE(&BLNAME)
+             CALL       PGM(UPDHST) PARM('MEP0230' &MSGDTA)
+
+             ENDPGM

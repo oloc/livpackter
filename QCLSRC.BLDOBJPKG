@@ -1,0 +1,107 @@
+/*********************************************************************/
+/* Programme qui, à partir d'une request MKS Implementer, constitue  */
+/* un fichier des composants de cette requête et leurs attributs.    */
+/*                                                                   */
+/* Olivier Locard - 24/02/05                                         */
+/* MOD OLOC 19/04/05 : Prise en compte de l'Emergency                */
+/* MOD OLOC 22/04/05 : Compteur en alphanumérique                    */
+/* MOD OLOC 30/10/06 : Ajout du code SQL dans le CRTTMPPKG           */
+/* MOD OLOC 09/11/06 : Ajout de l'envrironnement cible               */
+/*********************************************************************/
+             PGM        PARM(&REQUEST &OBJECT &OBJCOD &TGTENV &APP +
+                          &EMGLIB)
+
+             DCL        VAR(&APP) TYPE(*CHAR) LEN(3)
+             DCL        VAR(&CRTLIB) TYPE(*CHAR) LEN(10)
+             DCL        VAR(&DATE) TYPE(*CHAR) LEN(3)
+             DCL        VAR(&DATEJUL) TYPE(*CHAR) LEN(6)
+             DCL        VAR(&EMGLIB) TYPE(*CHAR) LEN(10)
+             DCL        VAR(&NOM) TYPE(*CHAR) LEN(10)
+             DCL        VAR(&OBJECT) TYPE(*CHAR) LEN(10)
+             DCL        VAR(&OBJCOD) TYPE(*CHAR) LEN(7)
+             DCL        VAR(&OWNER) TYPE(*CHAR) LEN(10)
+             DCL        VAR(&REQUEST) TYPE(*CHAR) LEN(4)
+             DCL        VAR(&REQUEST2) TYPE(*DEC) LEN(4 0)
+             DCL        VAR(&REQUESTDEC) TYPE(*DEC) LEN(15 5)
+             DCL        VAR(&RTNCOD) TYPE(*CHAR) LEN(4)
+             DCL        VAR(&TGTENV) TYPE(*CHAR) LEN(10)
+             DCL        VAR(&SQLCPT) TYPE(*DEC) LEN(1 0) VALUE(0)
+             DCL        VAR(&SYSDAT) TYPE(*CHAR) LEN(06)
+             DCL        VAR(&SYSNAM) TYPE(*CHAR) LEN(10)
+             /* Le trigramme système est initialisé à 'Anomalie'     */
+
+             /* Pour le debug                                        */
+             SNDPGMMSG  MSG('*** Requête :' *BCAT &REQUEST *BCAT ', +
+                          Objet :' *BCAT &OBJECT *BCAT ', Code +
+                          Objet :' *BCAT &OBJCOD *BCAT ', env. +
+                          cible :' *BCAT &TGTENV *BCAT '***')
+
+/*********************************************************************/
+/* Lancement de la la constitution du fichier Bon de livraison       */
+/*********************************************************************/
+             DLTF       FILE(QTEMP/TMPPKGPF)
+             MONMSG     MSGID(CPF0000)
+             CRTPF      FILE(QTEMP/TMPPKGPF) SRCMBR(MEPPKGPF)
+             /* Un spoule de création est généré, on le supprime     */
+             DLTSPLF    FILE(TMPPKGPF) SPLNBR(*LAST)
+
+ CRTTMPPKG:  OVRDBF     FILE(MEPPKGPF) TOFILE(TMPPKGPF)
+             CALL       PGM(CRTTMPPKG) PARM(&REQUEST &OBJECT &OBJCOD +
+                          &TGTENV &SYSNAM &APP &EMGLIB &RTNCOD)
+             DLTOVR     FILE(MEPPKGPF)          /* Mod 19/04/05 */
+
+             /* Gestion du cas où le SQL code est select vide        */
+             IF         COND(&RTNCOD *EQ '0100') THEN(DO)
+             SNDPGMMSG  MSG('*** Requête' *BCAT &REQUEST *BCAT 'non +
+                          trouvée dans le fichier MWIPF110 ***')
+             DLYJOB     DLY(3)
+             CHGVAR     VAR(&RTNCOD) VALUE('0000')
+             CHGVAR     VAR(&SQLCPT) VALUE(&SQLCPT + 1)
+             IF         COND(&SQLCPT *LE 5) THEN(GOTO +
+                          CMDLBL(CRTTMPPKG))
+             ENDDO
+
+             /* Pour le debug                                        */
+             SNDPGMMSG  MSG('*** Requête :' *BCAT &REQUEST *BCAT ', +
+                          Objet :' *BCAT &OBJECT *BCAT ', Code +
+                          Objet :' *BCAT &OBJCOD *BCAT ', Système +
+                          :' *BCAT &SYSNAM *BCAT ', Application :' +
+                          *BCAT &APP *BCAT ', Emergency :' *BCAT +
+                          &EMGLIB *BCAT '***')
+
+/*********************************************************************/
+/* Constitution du nom du fichier Bon de Livraison                   */
+/*********************************************************************/
+
+             /* Pour le debug                                        */
+ NAME:       SNDPGMMSG  MSG('*** Système :' *BCAT &SYSNAM *BCAT ', +
+                          Requête : ' *BCAT &REQUEST *BCAT '***')
+             CALL       PGM(RTVPKGNAM) PARM(&SYSNAM &REQUEST &NOM)
+             SNDPGMMSG  MSG('*** Nom trouvé :' *BCAT &NOM *BCAT '***')
+
+/*********************************************************************/
+/* Vérification de la création du fichier Bon de livraison           */
+/*********************************************************************/
+             /* Récupération de la *LIB où créer le fichier en +
+                prenant appui sur la *LIB où est le MEPPKGPF         */
+             CALL       PGM(DSPPFD) PARM('MEPPKGPF' &CRTLIB)
+             /* Si le bon de livraison n'existe pas on le crée       */
+             CHKOBJ     OBJ(&NOM) OBJTYPE(*FILE)
+             MONMSG     MSGID(CPF9801) EXEC(DO)
+ CRTPF:      CRTPF      FILE(&CRTLIB/&NOM) SRCMBR(MEPPKGPF)
+             /* Un spoule de création est généré, on le supprime     */
+             DLTSPLF    FILE(&NOM) SPLNBR(*LAST)
+             ENDDO
+
+/*********************************************************************/
+/* Remplissage du fichier Bon de Livraison                           */
+/*********************************************************************/
+
+ CPYF:       CPYF       FROMFILE(TMPPKGPF) TOFILE(&NOM) MBROPT(*ADD)
+             RTVOBJD    OBJ(&CRTLIB) OBJTYPE(*LIB) OWNER(&OWNER)
+             CHGOBJOWN  OBJ(&NOM) OBJTYPE(*FILE) NEWOWN(&OWNER)
+
+             DLTF       FILE(QTEMP/TMPPKGPF)
+             MONMSG     MSGID(CPF0000)
+
+             ENDPGM

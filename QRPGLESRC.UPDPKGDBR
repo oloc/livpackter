@@ -1,0 +1,68 @@
+     H**********************************************************************
+     H* Au travers du DSPDBR du fichier PF du BL on regarde si ses LF
+     H* font partis du BL. Si ce n'est pas le cas on les insère dans le BL
+     H* Et on duplique ceux de prod dans le quai de livraison afin qu'ils
+     H* soient traités et rattachés à leur PF.
+     H*
+     H* Le code action du BL est mis à 'L'
+     H*
+     H* 90 : No Record in the file (Chain)
+     H* 99 : EOF
+     H*
+     H* Olivier Locard - Prolival - 19/10/05
+     H**********************************************************************
+     FQADSPDBR  IF   E           K DISK    RENAME(QWHDRDBR:QWHDRDBRR)
+     FMEPPKGPF2 UF A E           K DISK    RENAME(MEPPKG2:MEPPKG2R)
+     F*
+     C     *ENTRY        PLIST
+     C                   PARM                    DMWINO           04
+     C                   PARM                    CRTSEQNBR        04
+     C                   PARM                    DETMBR           10
+     C                   PARM                    DETTPE           08
+     C                   PARM                    SYSNAM           10
+     C                   PARM                    DETLIB           10
+     C                   PARM                    DOBOWN           10
+     C                   PARM                    OBJMEPLIB        10
+     C                   PARM                    APP              03
+     C                   PARM                    EMGLIB           10
+     C*
+     C* Boucle sur la lecture du fichier généré par le DSPDBR
+     C     *IN99         DOWEQ     '0'
+     C                   READ      QWHDRDBRR                              99
+     C     *IN99         CABEQ     '1'           FIN
+     C* Test s'il n'y a pas de dépendance - WHREFI vide
+     C     WHREFI        IFNE      '          '
+     C                   MOVEL     'LF'          DETATR
+     C     KEY           KLIST
+     C                   KFLD                    WHREFI
+     C                   KFLD                    WHRELI
+     C                   KFLD                    DETTPE
+     C                   KFLD                    DETATR
+     C     KEY           CHAIN     MEPPKG2R                           90
+     C     *IN90         IFEQ      *ON
+      *                  Mise à blanc
+     C                   MOVEL     *BLANKS       DETMBR
+     C                   MOVEL     *BLANKS       DETLIB
+     C                   MOVEL     *BLANKS       DETTYP
+     C                   MOVEL     *BLANKS       DETSRL
+     C                   MOVEL     *BLANKS       DETFIL
+      *                  Remplissage des zones
+     C                   MOVEL     WHREFI        DETMBR
+     C                   MOVEL     WHRELI        DETLIB
+     C                   MOVEL     'L'           DETACT
+     C                   MOVEL     '*NONE'       DETSRL
+     C                   MOVEL     '*NONE'       DETFIL
+     C* Ajout du fichier LF dans le bon de livraison
+     C                   WRITE     MEPPKG2R
+     C* Duplication de ce LF dans le quai de livraison
+     C                   CALL      'MEPDUPLF'
+     C                   PARM                    DETMBR
+     C                   PARM                    DETLIB
+     C                   PARM                    OBJMEPLIB
+     C                   ENDIF
+     C                   ENDIF
+     C                   ENDDO
+     C* Fin de programme
+     C     FIN           TAG
+     C                   CLOSE     MEPPKGPF2
+     C                   SETON                                            LR

@@ -1,0 +1,41 @@
+/*********************************************************************/
+/* Récupération du nom de l'application renseignée dans un BL.       */
+/* On boucle pour fermer le fichier correctement. Mais seul le param */
+/* &APP, le trigramme de l'application nous intéresse                */
+/*                                                                   */
+/* Programme appelant : UPDMEPINF                                    */
+/*                                                                   */
+/* Olivier Locard - Prolival - 25/04/05                              */
+/* OLOC 29/08/06 : Ajout de la gestion de l'absence de membre        */
+/* OLOC 07/08/07 Mise en place d'un message ID pour le retour        */
+/*********************************************************************/
+             PGM        PARM(&BLNAME &APP)
+
+             DCL        VAR(&BLNAME) TYPE(*CHAR) LEN(10)
+             DCL        VAR(&MSGDTA) TYPE(*CHAR) LEN(20)
+
+             DCLF       FILE(MEPPKGPF)
+
+             /* Gestion de l'anomalie "absence de bon de livraison"  */
+             CHGVAR     VAR(&APP) VALUE('ANO')
+             IF         COND(&BLNAME *EQ ' ') THEN(GOTO CMDLBL(FIN))
+
+             CHKOBJ     OBJ(&BLNAME) OBJTYPE(*FILE)
+             MONMSG     MSGID(CPF9801) EXEC(DO)
+             CHKOBJ     OBJ(MEPPKGPF) OBJTYPE(*FILE) MBR(&BLNAME)
+             MONMSG     MSGID(CPF9815) EXEC(GOTO CMDLBL(FIN))
+             OVRDBF     FILE(MEPPKGPF) TOFILE(MEPPKGPF) MBR(&BLNAME)
+             GOTO       CMDLBL(BOUCLE)
+             ENDDO
+
+             OVRDBF     FILE(MEPPKGPF) TOFILE(&BLNAME)
+ BOUCLE:     RCVF
+             MONMSG     MSGID(CPF0864) EXEC(GOTO CMDLBL(DLTOVR))
+             GOTO       CMDLBL(BOUCLE)
+ DLTOVR:     DLTOVR     FILE(MEPPKGPF)
+
+ FIN:        CHGVAR     VAR(%SST(&MSGDTA 01 10)) VALUE(&BLNAME)
+             CHGVAR     VAR(%SST(&MSGDTA 11 10)) VALUE(&APP)
+             SNDPGMMSG  MSGID(MEP5002) MSGF(MEPMSGF) MSGDTA(&MSGDTA)
+
+             ENDPGM

@@ -1,0 +1,68 @@
+/*********************************************************************/
+/*********************************************************************/
+/* Test de présence de mises en production dans le fichier des       */
+/* planifications. On copie avec crible dans un tempo.               */
+/* On boucle sur ce tempo pour déterminer les packages à livrer.     */
+/* On en fournit la liste afin de faciliter le pilotage.             */
+/* Le cas échéant, on renvoit "aucun package à livrer".              */
+/* On effectue le renvoi de code retour auprès de Control M :        */
+/* 00 : Rien à planifier                                             */
+/* 04 : MEP à planifier                                              */
+/*                                                                   */
+/* Olivier Locard - Prolival - 12/12/05                              */
+/*********************************************************************/
+             PGM        PARM(&CODRTN &MEPDATE &APP)
+
+             DCL        VAR(&APP) TYPE(*CHAR) LEN(3)
+             DCL        VAR(&MEPDATE) TYPE(*CHAR) LEN(8)
+             DCL        VAR(&MEPUSER) TYPE(*CHAR) LEN(10)
+             DCL        VAR(&NBR) TYPE(*CHAR) LEN(2)
+             DCL        VAR(&NBRDEC) TYPE(*DEC) LEN(2 0) VALUE(0)
+             /* Variables du P_CODRTN                                */
+             DCL        VAR(&CODRTN) TYPE(*CHAR) LEN(2)
+             DCL        VAR(&EXIT) TYPE(*CHAR) LEN(1) VALUE('N')
+             DCL        VAR(&MSG) TYPE(*CHAR) LEN(100)
+             DCL        VAR(&MSG1) TYPE(*CHAR) LEN(100) VALUE('Pour +
+                          plus de détails, voir dans le Livpackter.')
+             DCL        VAR(&MSG2) TYPE(*CHAR) LEN(100)
+             DCL        VAR(&PGM) TYPE(*CHAR) LEN(50) +
+                          VALUE('LIVPACKTER - Livraison des +
+                          packages Implementer')
+
+             DCLF       FILE(MEPLOGPF)
+
+             CHGVAR     VAR(&CODRTN) VALUE('00')
+
+/*********************************************************************/
+/* Initialisations du traitement                                     */
+/*********************************************************************/
+             /* Création du fichier temporaire                       */
+             DLTF       FILE(QTEMP/SCDTMPPF)
+             MONMSG     MSGID(CPF0000)
+             /* Cpyf avec critère de sélection afin de n'avoir que +
+                la bonne appli' à la bonne date dans le fichier lu   */
+             CPYF       FROMFILE(MEPLOGPF) TOFILE(QTEMP/SCDTMPPF) +
+                          FROMMBR(SCDMEP) CRTFILE(*YES) INCREL((*IF +
+                          MEPDATE *EQ &MEPDATE) (*AND APP *EQ &APP))
+
+             OVRDBF     FILE(MEPLOGPF) TOFILE(SCDTMPPF)
+
+
+/*********************************************************************/
+/* Boucle sur le fichier criblé                                      */
+/*********************************************************************/
+ BOUCLE:     RCVF
+             MONMSG     MSGID(CPF0864) EXEC(GOTO CMDLBL(FINBOUCLE))
+             CHGVAR     VAR(&CODRTN) VALUE('04')
+             CHGVAR     VAR(&NBRDEC) VALUE(&NBRDEC + 1)
+
+             GOTO       CMDLBL(BOUCLE)
+
+ FINBOUCLE:  CHGVAR     VAR(&NBR) VALUE(&NBRDEC)
+             CHGVAR     VAR(&MSG) VALUE('Nombre de packages à livrer +
+                          pour l''application' *BCAT &APP *BCAT ':' +
+                          *BCAT &NBR *TCAT '.')
+
+             CALL       PGM(P_CODRTN) PARM(&CODRTN &EXIT &PGM &MSG +
+                          &MSG1 &MSG2)
+ FIN:        ENDPGM

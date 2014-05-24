@@ -1,0 +1,19 @@
+/*********************************************************************/
+/* Suppression des bons de livraison archivés.                       */
+/* Soit suppression des membres du fichier MEPPKGPF                  */
+/*                                                                   */
+/* Programme appelant : MEPINI                                       */
+/*                                                                   */
+/* Olivier Locard - Prolival - 09/10/06                              */
+/* OLOC 08/03/07 Nouveau format d'historiques                        */
+/*********************************************************************/
+             PGM
+
+             /* historique de début d'opération                      */
+             CALL       PGM(UPDHST) PARM('INI0120' ' ')
+             /* Suppression des bons de livraisons archivés          */
+             RMVM       FILE(MEPPKGPF) MBR(*ALL)
+             /* historique de fin d'opération                        */
+             CALL       PGM(UPDHST) PARM('INI0220' ' ')
+
+             ENDPGM

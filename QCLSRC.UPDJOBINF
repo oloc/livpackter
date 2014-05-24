@@ -1,0 +1,101 @@
+/*********************************************************************/
+/* Récupération des informations liées à la mise en production       */
+/* Le tout est mis dans la Data Area MEPINF ainsi "découpée" :       */
+/*                                                                   */
+/* 11 06 Numéro du job                                               */
+/* 17 10 Utilisateur du job                                          */
+/* 27 10 Nom du job                                                  */
+/* 37 10 Nom du job soumettant                                       */
+/* 47 10 Nom de l'utilisateur soumettant                             */
+/* 57 10 Nom de la msgq de la soumission                             */
+/* 67 10 Nom de la *LIB de la msgq de la soumission                  */
+/* 96 01 Type de job (Intéractif, batch...)                          */
+/*                                                                   */
+/* Programme appelant : UPDMEPINF                                    */
+/*                                                                   */
+/* Olivier Locard - Prolival - 07/08/07                              */
+/*********************************************************************/
+             PGM
+
+             /* Variables pour le Rtvjoba                            */
+             DCL        VAR(&JOB)     TYPE(*CHAR) LEN(10)
+             DCL        VAR(&USR)     TYPE(*CHAR) LEN(10)
+             DCL        VAR(&NBR)     TYPE(*CHAR) LEN(6)
+             DCL        VAR(&MSGQ)    TYPE(*CHAR) LEN(10)
+             DCL        VAR(&MSGQLIB) TYPE(*CHAR) LEN(10)
+
+             /* Variables pour le Qusrjobi                           */
+             DCL        VAR(&RECEIVER) TYPE(*CHAR) LEN(544)
+             DCL        VAR(&LENGHT) TYPE(*DEC) LEN(4) VALUE(0544)
+             DCL        VAR(&FORMAT) TYPE(*CHAR) LEN(8) +
+                          VALUE('JOBI0400')
+             DCL        VAR(&QUALIFIED) TYPE(*CHAR) LEN(26)
+             DCL        VAR(&INTERNAL) TYPE(*CHAR) LEN(16) VALUE(' ')
+
+             /* Variables pour le découpage du Receiver              */
+             DCL        VAR(&SBMJOB)     TYPE(*CHAR) LEN(10)
+             DCL        VAR(&SBMUSR)     TYPE(*CHAR) LEN(10)
+             DCL        VAR(&SBMMSGQ)    TYPE(*CHAR) LEN(10)
+             DCL        VAR(&SBMMSGQLIB) TYPE(*CHAR) LEN(10)
+             DCL        VAR(&TYPJOB)     TYPE(*CHAR) LEN(1)
+             DCL        VAR(&MSGDTA)     TYPE(*CHAR) LEN(77) VALUE(' ')
+
+/*********************************************************************/
+/* Récupération des attributs du job en cours                        */
+/*********************************************************************/
+             RTVJOBA    JOB(&JOB) USER(&USR) NBR(&NBR) +
+                          SBMMSGQ(&MSGQ) SBMMSGQLIB(&MSGQLIB)
+             CHGVAR     VAR(&QUALIFIED) VALUE(&JOB *CAT &USR *CAT +
+                          &NBR)
+
+/*********************************************************************/
+/* Appel de l'API qui retourne les attributs du submitter            */
+/*********************************************************************/
+             CALL       PGM(QUSRJOBI) PARM(&RECEIVER &LENGHT &FORMAT +
+                          &QUALIFIED &INTERNAL)
+
+/*********************************************************************/
+/* Découpage de la variable de retour en données exploitables        */
+/*********************************************************************/
+             CHGVAR     VAR(&TYPJOB)     VALUE(%SST(&RECEIVER 061 01))
+             CHGVAR     VAR(&SBMJOB)     VALUE(%SST(&RECEIVER 254 10))
+             CHGVAR     VAR(&SBMUSR)     VALUE(%SST(&RECEIVER 264 10))
+             CHGVAR     VAR(&SBMMSGQ)    VALUE(%SST(&RECEIVER 280 10))
+             CHGVAR     VAR(&SBMMSGQLIB) VALUE(%SST(&RECEIVER 290 10))
+
+             /* Cas d'un job interactif                              */
+             IF         COND(&TYPJOB *EQ 'I') THEN(DO)
+             CHGVAR     VAR(&SBMJOB)     VALUE(&JOB)
+             CHGVAR     VAR(&SBMUSR)     VALUE(&USR)
+             CHGVAR     VAR(&SBMMSGQ)    VALUE(&MSGQ)
+             CHGVAR     VAR(&SBMMSGQLIB) VALUE(&MSGQLIB)
+             ENDDO
+
+/*********************************************************************/
+/* Mise à jour de la data area                                       */
+/*********************************************************************/
+
+             CHGDTAARA  DTAARA(MEPINF (11 06)) VALUE(&NBR)
+             CHGDTAARA  DTAARA(MEPINF (17 10)) VALUE(&USR)
+             CHGDTAARA  DTAARA(MEPINF (27 10)) VALUE(&JOB)
+             CHGDTAARA  DTAARA(MEPINF (37 10)) VALUE(&SBMJOB)
+             CHGDTAARA  DTAARA(MEPINF (47 10)) VALUE(&SBMUSR)
+             CHGDTAARA  DTAARA(MEPINF (57 10)) VALUE(&SBMMSGQ)
+             CHGDTAARA  DTAARA(MEPINF (67 10)) VALUE(&SBMMSGQLIB)
+             CHGDTAARA  DTAARA(MEPINF (96 01)) VALUE(&TYPJOB)
+
+/*********************************************************************/
+/* Fin de programme                                                  */
+/*********************************************************************/
+ FIN:        CHGVAR     VAR(%SST(&MSGDTA 01 10)) VALUE(&JOB)
+             CHGVAR     VAR(%SST(&MSGDTA 11 10)) VALUE(&USR)
+             CHGVAR     VAR(%SST(&MSGDTA 21 06)) VALUE(&NBR)
+             CHGVAR     VAR(%SST(&MSGDTA 27 10)) VALUE(&SBMJOB)
+             CHGVAR     VAR(%SST(&MSGDTA 37 10)) VALUE(&SBMUSR)
+             CHGVAR     VAR(%SST(&MSGDTA 47 10)) VALUE(&SBMMSGQ)
+             CHGVAR     VAR(%SST(&MSGDTA 57 10)) VALUE(&SBMMSGQLIB)
+             CHGVAR     VAR(%SST(&MSGDTA 67 01)) VALUE(&TYPJOB)
+
+             SNDPGMMSG  MSGID(MEP5001) MSGF(MEPMSGF) MSGDTA(&MSGDTA)
+
+             ENDPGM

@@ -1,0 +1,23 @@
+/*********************************************************************/
+/* Programme de lancement des triggers.                              */
+/*                                                                   */
+/* Programme appelant : aucun - trigger                              */
+/*                                                                   */
+/* Olivier Locard - Prolival - 02/04/07                              */
+/* OLOC 06/08/07 Ajout du message pour faciliter la lecture des      */
+/* historiques.                                                      */
+/*********************************************************************/
+             PGM        PARM(&PGM &PGMLIB)
+
+             DCL        VAR(&MSG)    TYPE(*CHAR) LEN(512)
+             DCL        VAR(&PGM)    TYPE(*CHAR) LEN(10)
+             DCL        VAR(&PGMLIB) TYPE(*CHAR) LEN(10)
+
+             SBMJOB     CMD(CALL PGM(&PGMLIB/&PGM)) JOB(&PGM) +
+                          JOBD(PPPJD) USER(MWIPROD) INLLIBL(*JOBD)
+
+             CHGVAR     VAR(&MSG) VALUE('Soumission du programme' +
+                          *BCAT &PGMLIB *TCAT '/' *TCAT &PGM *TCAT '.')
+             SNDPGMMSG  MSG(&MSG)
+
+             ENDPGM

@@ -1,0 +1,45 @@
+/*********************************************************************/
+/* Visualisation des historiques de MEP.                             */
+/* Tout est dans le même fichier SCDMEPPF, mais il y a un jeu de     */
+/* membres. On fait donc des OVRDBF paramétrés.                      */
+/*                                                                   */
+/* Olivier Locard - Prolival - 04/03/05                              */
+/* OLOC 02/02/06 : Mod de l'OvrDbf pour visualiser depuis Tools      */
+/* OLOC 08/08/07 : Cascade d'Ovrdbf afin de lire le BL où qu'il soit */
+/*********************************************************************/
+             PGM        PARM(&BLNAME)
+
+             DCL        VAR(&BLNAME) TYPE(*CHAR) LEN(10)
+             /* Déclaration des résultats des CHKOBJ                 */
+             DCL        VAR(&A) TYPE(*LGL) LEN(1) VALUE('1')
+             DCL        VAR(&B) TYPE(*LGL) LEN(1) VALUE('1')
+             DCL        VAR(&C) TYPE(*LGL) LEN(1) VALUE('1')
+
+/* Cascade de Chkobj afin de déterminer où est le Bon de livraison   */
+             CHKOBJ     OBJ(&BLNAME) OBJTYPE(*FILE)
+             MONMSG     MSGID(CPF9801) EXEC(CHGVAR VAR(&A) VALUE('0'))
+             CHKOBJ     OBJ(MEPPKGPF) OBJTYPE(*FILE) MBR(&BLNAME)
+             MONMSG     MSGID(CPF9815) EXEC(CHGVAR VAR(&B) VALUE('0'))
+             CHKOBJ     OBJ(MEPPKGPFA) OBJTYPE(*FILE) MBR(&BLNAME)
+             MONMSG     MSGID(CPF9801)
+             MONMSG     MSGID(CPF9815) EXEC(CHGVAR VAR(&C) VALUE('0'))
+
+/* Traitement des cas afin de procéder à l'OVRDBF idoine             */
+             SELECT
+             WHEN       COND(&A) THEN(OVRDBF FILE(MEPPKGPF) +
+                          TOFILE(&BLNAME))
+             WHEN       COND(&B) THEN(OVRDBF FILE(MEPPKGPF) +
+                          TOFILE(MEPPKGPF) MBR(&BLNAME))
+             WHEN       COND(&C) THEN(OVRDBF FILE(MEPPKGPF) +
+                          TOFILE(MEPPKGPFA) MBR(&BLNAME))
+             OTHERWISE  CMD(DO)
+             SNDPGMMSG  MSGID(CHK1003) MSGF(MEPMSGF) MSGDTA(&BLNAME) +
+                          MSGTYPE(*ESCAPE)
+             ENDDO
+             ENDSELECT
+
+             CALL       PGM(DSPPKG2) PARM(&BLNAME)
+
+             DLTOVR     FILE(MEPPKGPF)
+
+ FIN:        ENDPGM

@@ -1,0 +1,33 @@
+      **********************************************************************
+      * Chronologie d'un bon de livraison
+      * Extration des enregistrements d'un Bon de livraison
+      *
+      * Programme appelant :   DSPCHRP
+      * Programme appelé   :
+      *
+      * Liste des parametres : BLNAME  Bon de livraison
+      *
+      * Liste des fichiers   : MEPHSTPF En lecture
+      *                        TMPHSTWF En Ecriture
+      *
+      * Option de compilation COMMIT=*NONE
+      *
+      * Hervé Esposito - Altique - 26/03/07
+     H**********************************************************************
+      * Permet d'eviter de deboger les specif I et O
+     HOPTION(*NODEBUGIO: *SRCSTMT)
+      *
+     C     *ENTRY        PLIST
+     C                   PARM                    BLNAME           10
+      *
+     C*****************************************************************
+     C* Extration des données concernant le Bon de Livraison          *
+     C*****************************************************************
+      *
+     C/EXEC SQL
+     C+ INSERT INTO TMPCHRWF
+     C+ SELECT * FROM MEPHSTPF
+     C+ WHERE BLNAME = :BLNAME
+     C/END-EXEC
+      *
+     C                   SETON                                        LR

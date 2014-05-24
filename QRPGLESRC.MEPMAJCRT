@@ -1,0 +1,50 @@
+      * Ajout des enregistrements de type création dans le fichier
+      * MEPHSTPF
+      * Ce programme est du ONE SHOT et que sur la machine ARDENNES
+      *
+      * Programme appelant : MEPMAJP
+      * Programme appelé   :
+      *
+      * Hervé Esposito - ALTIQUE -   22/03/07
+      *
+      *****************************************************************
+      * Permet d'eviter de deboger les specif I et O
+     HOPTION(*NODEBUGIO: *SRCSTMT)
+      *
+     FMEPLOGPF  IF A E           K DISK
+     FMEPHSTL0  IF A E           K DISK
+      *
+      * Récupération du N° de la requête dans le nom du BL
+      *
+     DNOMBL            DS            10
+     DZ1                       1      6
+     DRQS                      7     10
+      *
+     C     *LIKE         DEFINE    MSGID         NUMMSG
+      *
+     C     *ENTRY        PLIST
+     C                   PARM                    NUMMSG
+      *
+     C     CLEHST        KLIST
+     C                   KFLD                    BLNAME
+     C                   KFLD                    MEPDATE
+     C                   KFLD                    MEPTIME
+     C                   KFLD                    NUMMSG
+      *
+     C                   READ      MEPLOGPF                               60
+     C     *IN60         DOWEQ     *OFF
+     C     CLEHST        CHAIN     MEPHSTL0                           70
+     C     *IN70         IFEQ      *ON
+     C                   MOVEL     BLNAME        NOMBL
+     C                   MOVEL     NUMMSG        MSGID
+     C                   MOVEL     RQS           MSGDTA
+     C                   WRITE     MEPHST
+     C                   ENDIF
+     C                   MOVEL     *BLANKS       MSGDTA
+     C                   MOVEL     *BLANKS       RQS
+     C     *LOVAL        SETLL     MEPHSTL0
+     C                   READ      MEPLOGPF                               60
+     C                   ENDDO
+      *
+     C                   SETON                                        LR
+      *

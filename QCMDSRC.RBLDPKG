@@ -1,0 +1,10 @@
+             CMD        PROMPT('Reconstitution d''un BL')
+             PARM       KWD(RQSNBR) TYPE(*CHAR) LEN(4) MIN(1) +
+                          FULL(*YES) CHOICE('Requete Implementer') +
+                          PROMPT('Requete')
+             PARM       KWD(ENVNAM) TYPE(*CHAR) LEN(10) MIN(1) +
+                          PROMPT('Environnement')
+             PARM       KWD(APP) TYPE(*CHAR) LEN(3) PROMPT('Code CEX +
+                          de l''application')
+             PARM       KWD(EMGLIB) TYPE(*CHAR) LEN(10) +
+                          PROMPT('Bibliothèque Emergency')

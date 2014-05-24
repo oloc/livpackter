@@ -1,0 +1,21 @@
+/*********************************************************************/
+/* Récupération des informations liées à la mise en production       */
+/* Le tout est mis dans la Data Area MEPINF ainsi "découpée" :       */
+/*                                                                   */
+/* 01 10 Nom du bon de livraison                                     */
+/*                                                                   */
+/* Programme appelant : UPDMEPINF                                    */
+/*                                                                   */
+/* Olivier Locard - Prolival - 07/08/07                              */
+/*********************************************************************/
+             PGM        PARM(&BLNAME)
+
+             /* Variables passées en paramètre                       */
+             DCL        VAR(&BLNAME) TYPE(*CHAR) LEN(10)
+
+/*********************************************************************/
+/* Mise à jour du nom du Bon de livraison                            */
+/*********************************************************************/
+             CHGDTAARA  DTAARA(MEPINF (01 10)) VALUE(&BLNAME)
+
+ FIN:        ENDPGM

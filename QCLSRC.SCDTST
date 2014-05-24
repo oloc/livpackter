@@ -1,0 +1,24 @@
+/*********************************************************************/
+/*********************************************************************/
+/* Enveloppe pour prendre en compte les spécficités de CTM           */
+/*                                                                   */
+/* Olivier Locard - Prolival - 20/01/06                              */
+/* OLOC 29/08/07 Rem de l'actif pour éviter les plantages CtlM       */
+/* d'ici la refonte de l'automatisation                              */
+/*********************************************************************/
+             PGM        PARM(&EXEMOD &CODRET &MEPDATE &APP)
+
+             DCL        VAR(&APP) TYPE(*CHAR) LEN(3)
+             DCL        VAR(&CODRET) TYPE(*CHAR) LEN(2)
+             DCL        VAR(&EXEMOD) TYPE(*CHAR) LEN(5)
+             DCL        VAR(&MEPDATE) TYPE(*CHAR) LEN(8)
+
+/*********************************************************************/
+/* Initialisations du traitement                                     */
+/*********************************************************************/
+/*           P_EXEC     MODE(&EXEMOD) CODRTN(&CODRET) CMD(CALL +
+                          PGM(SCDMKSTST) PARM(&CODRET &MEPDATE &APP))*/
+/*           MONMSG     MSGID(CPF9898)                               */
+             DLYJOB     DLY(1)
+
+ FIN:        ENDPGM

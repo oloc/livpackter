@@ -1,0 +1,45 @@
+/*********************************************************************/
+/* Programme qui récupère la liste des BL en attente de traitement   */
+/* ie soit plannification, soit intégration à chaud.                 */
+/*                                                                   */
+/* Olivier Locard - Prolival - 10/03/05                              */
+/*********************************************************************/
+             PGM
+
+             DCL        VAR(&NOM)    TYPE(*CHAR) LEN(10)
+             DCL        VAR(&SYSTRI) TYPE(*CHAR) LEN(3)
+
+/*********************************************************************/
+/* Recherche du nom du système puis dans la table le trigramme       */
+/*********************************************************************/
+             CALL       PGM(RTVSYSTRI) PARM(&SYSTRI)
+             MONMSG     MSGID(MEP1001) EXEC(RETURN)
+
+/*********************************************************************/
+/* Constitution de la liste des BL en attente de plannification      */
+/*********************************************************************/
+ LISTE:      DLTF       FILE(QTEMP/QDSPOBJD)
+             MONMSG     MSGID(CPF0000)
+             CHGVAR     VAR(&NOM) VALUE(&SYSTRI *TCAT '*')
+             DSPOBJD    OBJ(&NOM) OBJTYPE(*FILE) OUTPUT(*OUTFILE) +
+                        OUTFILE(QTEMP/QDSPOBJD)
+             /* S'il n'y a rien à lister on créé un fichier vide     */
+             MONMSG     MSGID(CPF2123) EXEC(DO)
+             DSPOBJD    OBJ(QTEMP) OBJTYPE(*LIB) OUTPUT(*OUTFILE) +
+                        OUTFILE(QTEMP/QDSPOBJD)
+             CLRPFM     FILE(QTEMP/QDSPOBJD)
+             ENDDO
+
+             DLTF       FILE(QTEMP/PKGLSTWF)
+             MONMSG     MSGID(CPF2105)
+             CRTPF      FILE(QTEMP/PKGLSTWF) SRCFILE(QDDSSRC) +
+                        SRCMBR(PKGLSTPF)
+             DLTSPLF    FILE(PKGLSTWF)
+
+             OVRDBF     FILE(QADSPOBJ) TOFILE(QDSPOBJD)
+             OVRDBF     FILE(PKGLSTPF) TOFILE(PKGLSTWF)
+             CALL       PGM(CVTPKGL)
+             DLTOVR     FILE(PKGLSTPF)
+             DLTOVR     FILE(QADSPOBJ)
+
+ FIN:        ENDPGM

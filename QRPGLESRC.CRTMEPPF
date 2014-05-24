@@ -1,0 +1,92 @@
+     H**********************************************************************
+     H* Réinsertion des bonnes bibliothèques de production dans le bon de
+     H* livraison en prenant appui sur une table.
+     H*
+     H* DATE      : Date de mise en production
+     H* OVRPKGPF  : Overdbf pour le bon de livraison
+     H* OBJCODTBL : Table des codes objets avec leur destination en prod
+     H*
+     H* Olivier Locard - Prolival - 02/03/05
+     H* MOD OLOC 19/04/05 Prise en compte de l'Emergency
+     H* MOD OLOC 13/10/05 Modification du MEPPKGPF
+     H**********************************************************************
+     FMEPPKGPF  O    E           K DISK    RENAME(MEPPKG:MEPPKGR)
+     D**********************************************************************
+     D* Déclaration de variables                                           *
+     D**********************************************************************
+     D        REQUETE  S            512A   INZ('SELECT DMWINO, DETMBR, -
+     D                                     DETTYP, DETACT, DETTRG, -
+     D                                     EDSTLB, ESRCLB, ESRCFL, -
+     D                                     DETSRC, DOBOWN, DETTPE, DETATR, -
+     D                                     RDSMTY, SYSNAM, -
+     D                                     DETLIB, DETSRL, -
+     D                                     ECOBLB, ECSRLB, -
+     D                                     MEPDATE, APP, EMGLIB, -
+     D                                     OBJCODTBL.CRTSEQNBR, -
+     D                                     OBJCODTBL.CSVDTA -
+     D                                     FROM OVRPKGPF INNER JOIN OBJCODTBL -
+     D                                     ON (DETTRG = ENVRIN and -
+     D                                     OVRPKGPF.DETTYP = OBJCODTBL.EOBJCD) -
+     D                                     ')
+     DECOBLB           S             10
+     DECSRLB           S             10
+     C     *ENTRY        PLIST
+     C                   PARM                    DATE              8
+     C*
+     C
+     C**********************************************************************
+     C* Préparation de la requête                                          *
+     C**********************************************************************
+     C/EXEC SQL
+     C+ PREPARE S1 FROM :REQUETE
+     C/END-EXEC
+     C*
+     C*****************************************************************
+     C* Déclaration de curseur pour la Requête                        *
+     C*****************************************************************
+     C/EXEC SQL
+     C+ Declare C1 cursor for S1
+     C/END-EXEC
+     C*
+     C*****************************************************************
+     C* Ouverture du curseur                                          *
+     C*****************************************************************
+     C/EXEC SQL
+     C+ OPEN C1
+     C/END-EXEC
+     C*
+     C*****************************************************************
+     C* Fetch du curseur afin de récupérer le User ID                 *
+     C*****************************************************************
+     C     BOUCLE        TAG
+     C/EXEC SQL
+     C+ FETCH NEXT FROM C1 INTO :DMWINO, :DETMBR, :DETTYP, :DETACT,
+     C+                         :DETTRG, :DETLIB, :DETSRL, :DETFIL,
+     C+                         :DETSRC, :DOBOWN, :DETTPE, :DETATR,
+     C+                         :RDSMTY, :SYSNAM,
+     C+                         :OBJMEPLIB, :SRCMEPLIB,
+     C+                         :ECOBLB, :ECSRLB,
+     C+                         :MEPDATE, :APP, :EMGLIB,
+     C+                         :CRTSEQNBR, :CSVDTA
+     C/END-EXEC
+     C*
+     C     SQLCOD        CABNE     0             SUITE
+     C     DETLIB        COMP      '*PGMLIB'                              81
+     C     DETLIB        COMP      '*FILLIB'                              82
+     C     DETSRL        COMP      '*SRCLIB'                              83
+     C   81              MOVE      ECOBLB        DETLIB
+     C   82              MOVE      ECOBLB        DETLIB
+     C   83              MOVE      ECSRLB        DETSRL
+     C                   MOVE      DATE          MEPDATE
+     C                   WRITE     MEPPKGR
+     C                   GOTO      BOUCLE
+     C*****************************************************************
+     C* Fermeture du curseur et du fichier                            *
+     C*****************************************************************
+     C     SUITE         TAG
+     C/EXEC SQL
+     C+ CLOSE C1
+     C/END-EXEC
+     C                   CLOSE     MEPPKGPF
+     C*
+     C                   SETON                                            LR

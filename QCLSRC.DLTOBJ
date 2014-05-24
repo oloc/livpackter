@@ -1,0 +1,77 @@
+/*********************************************************************/
+/* Programme de suppression d'objet quelque soit son type en passant */
+/* par une bibliothèque temporaire qui est supprimée.                */
+/*                                                                   */
+/* Commande éponyme                                                  */
+/*                                                                   */
+/* Olivier Locard - Prolival - 13/03/07                              */
+/*********************************************************************/
+             PGM        PARM(&OBJLIB &TYPE)
+
+             /* Variables en paramètre                               */
+             DCL        VAR(&OBJLIB) TYPE(*CHAR) LEN(20) /* Qualifié */
+             DCL        VAR(&TYPE)   TYPE(*CHAR) LEN(10)
+             /* Variables de programme                               */
+             DCL        VAR(&DSC)    TYPE(*CHAR) LEN(50)
+             DCL        VAR(&LIB)    TYPE(*CHAR) LEN(10)
+             DCL        VAR(&OBJ)    TYPE(*CHAR) LEN(10)
+             DCL        VAR(&QTIME)  TYPE(*CHAR) LEN(8)
+             DCL        VAR(&TMPLIB) TYPE(*CHAR) LEN(10)
+             /* Variables pour la gestion des messages               */
+             DCL        VAR(&ERRORSW) TYPE(*LGL)
+             DCL        VAR(&MSGID)   TYPE(*CHAR) LEN(7)
+             DCL        VAR(&MSGDTA)  TYPE(*CHAR) LEN(100)
+             DCL        VAR(&MSGF)    TYPE(*CHAR) LEN(10)
+             DCL        VAR(&MSGFLIB) TYPE(*CHAR) LEN(10)
+
+             MONMSG     MSGID(CPF0000) EXEC(GOTO CMDLBL(ERREUR))
+
+             /* Découpage du qualifié                                */
+             CHGVAR     VAR(&OBJ) VALUE(%SST(&OBJLIB 01 10))
+             CHGVAR     VAR(&LIB) VALUE(%SST(&OBJLIB 11 10))
+
+             /* Création de la bibliothèque temporaire               */
+             /* On la nomme avec l'heure                             */
+             RTVSYSVAL  SYSVAL(QTIME) RTNVAR(&QTIME)
+             CHGVAR     VAR(&TMPLIB) VALUE('DO' *TCAT &QTIME)
+             CHGVAR     VAR(&DSC) VALUE('Delete' *BCAT &LIB *TCAT +
+                          '/' *TCAT &OBJ *BCAT 'type' *BCAT &TYPE)
+             CRTLIB     LIB(&TMPLIB) TYPE(*TEST) TEXT(&DSC)
+
+             /* On déplace l'objet à supprimer dans cette tempo      */
+             MOVOBJ     OBJ(&LIB/&OBJ) OBJTYPE(&TYPE) TOLIB(&TMPLIB)
+             /* Suppression de la *LIB temporaire                    */
+             DLTLIB     LIB(&TMPLIB)
+
+/* Renvoi des messages de type *COMP si fin normale                  */
+COMPMSG:    RCVMSG     MSGTYPE(*COMP) MSGDTA(&MSGDTA) MSGID(&MSGID) +
+                         MSGF(&MSGF) SNDMSGFLIB(&MSGFLIB)
+            IF         (&MSGID *EQ '       ') RETURN  /* Fin du pgm  */
+            SNDPGMMSG  MSGID(&MSGID) MSGF(&MSGFLIB/&MSGF) +
+                         MSGDTA(&MSGDTA) MSGTYPE(*COMP)
+            GOTO       COMPMSG /* Boucle sur messages *COMP          */
+/*********************************************************************/
+/* Gestion des erreurs                                               */
+/*********************************************************************/
+             /* La seconde fois on arrête le programme               */
+ ERREUR:     IF         COND(&ERRORSW) THEN(SNDPGMMSG MSGID(CPF9899) +
+                          MSGF(QCPFMSG) MSGTYPE(*ESCAPE))
+             /* Mise en place du switch                              */
+             CHGVAR     VAR(&ERRORSW) VALUE('1')
+
+ /* Renvoi des messages de type *DIAG si fin anormale                */
+ DIAGMSG:    RCVMSG     MSGTYPE(*DIAG) MSGDTA(&MSGDTA) MSGID(&MSGID) +
+                          MSGF(&MSGF) SNDMSGFLIB(&MSGFLIB)
+             IF         COND(&MSGID *EQ '       ') THEN(GOTO +
+                          CMDLBL(EXCPMSG))
+             SNDPGMMSG  MSGID(&MSGID) MSGF(&MSGFLIB/&MSGF) +
+                          MSGDTA(&MSGDTA) MSGTYPE(*DIAG)
+             GOTO       CMDLBL(DIAGMSG) /* Boucle sur msg *DIAG      */
+
+/* Renvoi du message d'erreur                                        */
+ EXCPMSG:    RCVMSG     MSGTYPE(*EXCP) MSGDTA(&MSGDTA) MSGID(&MSGID) +
+                          MSGF(&MSGF) SNDMSGFLIB(&MSGFLIB)
+             SNDPGMMSG  MSGID(&MSGID) MSGF(&MSGFLIB/&MSGF) +
+                          MSGDTA(&MSGDTA) MSGTYPE(*ESCAPE)
+
+ ENDPGM:     ENDPGM

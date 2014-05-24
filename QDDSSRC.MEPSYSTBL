@@ -1,0 +1,3 @@
+     A          R SYSTBL
+     A            SYSNAME       10          COLHDG('System Name')
+     A            SYSTRI         3          COLHDG('Trigramme Système')

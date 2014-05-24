@@ -1,0 +1,92 @@
+/*********************************************************************/
+/* Programme qui change la description des objets afin de mettre     */
+/* les bons fichiers sources (au lieu de ceux du quai)               */
+/*                                                                   */
+/* Programme appelant : MEPPRC                                       */
+/*                                                                   */
+/* Olivier Locard - Prolival - 17/11/06                              */
+/* OLOC 20/11/06 Ajout du code action L pour les LF rapatriés        */
+/* OLOC 09/03/07 Nouveau format des historiques                      */
+/*********************************************************************/
+             PGM
+
+             DCL        VAR(&BLNAME) TYPE(*CHAR) LEN(10)
+             DCL        VAR(&MSGDTA) TYPE(*CHAR) LEN(132) VALUE(' ')
+             /* Variables pour l'API QLICOBJD                        */
+             DCL        VAR(&RTNLIB) TYPE(*CHAR) LEN(10)
+             DCL        VAR(&OBJLIB) TYPE(*CHAR) LEN(20)
+             DCL        VAR(&OBJTYP) TYPE(*CHAR) LEN(10)
+             DCL        VAR(&OBJINF) TYPE(*CHAR) LEN(64) VALUE(' ')
+             DCL        VAR(&ERROR) TYPE(*CHAR) LEN(4) +
+                          VALUE(X'00000000')
+
+             DCLF       FILE(MEPPKGPF)
+
+             /* Récupération du nom du bon de livraison              */
+             RTVDTAARA  DTAARA(MEPINF (1 10)) RTNVAR(&BLNAME)
+
+/*********************************************************************/
+/* Historisation du début de cette opération                         */
+/*********************************************************************/
+             CHGVAR     VAR(&MSGDTA) VALUE(&BLNAME)
+             CALL       PGM(UPDHST) PARM('MEP0160' &MSGDTA)
+
+/*********************************************************************/
+/* Initialisation de la variable OBJINF de mise à jour               */
+/*********************************************************************/
+
+             /* Affectation de la clef 1 = Source File              */
+             CHGVAR     VAR(%SST(&OBJINF 1 4)) VALUE(X'00000001')
+             /* Longueur de la clef choisie (1)                     */
+             CHGVAR     VAR(%SST(&OBJINF 5 4)) VALUE(X'00000001')
+             /* Longueur des données mises à jour (F+L+M = 30)      */
+             CHGVAR     VAR(%SST(&OBJINF 9 4)) VALUE(X'0000001E')
+
+/*********************************************************************/
+/* Boucle sur le bon de livraison afin de réaffecter les sources     */
+/*********************************************************************/
+             OVRDBF     FILE(MEPPKGPF) MBR(&BLNAME)
+ BOUCLE:     RCVF
+             MONMSG     MSGID(CPF0864) EXEC(GOTO CMDLBL(FINBOUCLE))
+
+             /* On ne traite pas les objets en delete               */
+             IF         COND(&DETACT *EQ '3') THEN(GOTO CMDLBL(BOUCLE))
+             /* On ne traite pas les logiques rapatriés             */
+             IF         COND(&DETACT *EQ 'L') THEN(GOTO CMDLBL(BOUCLE))
+             /* On ne traite pas les "non-objets"                   */
+             IF         COND(&DETTPE *EQ ' ') THEN(GOTO CMDLBL(BOUCLE))
+
+             /* *NONE n'apparait pas sur iSeries mais un blanc       */
+             IF         COND(&DETFIL *EQ '*NONE') THEN(CHGVAR +
+                          VAR(&DETFIL) VALUE(' '))
+             IF         COND(&DETSRL *EQ '*NONE') THEN(CHGVAR +
+                          VAR(&DETSRL) VALUE(' '))
+             IF         COND(&DETSRC *EQ '*NONE') THEN(CHGVAR +
+                          VAR(&DETSRC) VALUE(' '))
+
+             /* consitution de la variable de mise à jour            */
+             CHGVAR     VAR(%SST(&OBJINF 13 10)) VALUE(&DETFIL)
+             CHGVAR     VAR(%SST(&OBJINF 23 10)) VALUE(&DETSRL)
+             CHGVAR     VAR(%SST(&OBJINF 33 10)) VALUE(&DETSRC)
+
+             /* constitution de la variable objet qualifié           */
+             CHGVAR     VAR(&OBJLIB) VALUE(' ')
+             CHGVAR     VAR(%SST(&OBJLIB 1 10)) VALUE(&DETMBR)
+             CHGVAR     VAR(%SST(&OBJLIB 11 10)) VALUE(&DETLIB)
+             CHGVAR     VAR(&OBJTYP) VALUE(&DETTPE)
+
+             /* Appel de l'API QLICOBJD pour mettre à jour la desc.  */
+             CALL       PGM(QLICOBJD) PARM(&RTNLIB &OBJLIB &OBJTYP +
+                          &OBJINF &ERROR)
+
+             GOTO       CMDLBL(BOUCLE)
+
+ FINBOUCLE:  DLTOVR     FILE(MEPPKGPF)
+
+/*********************************************************************/
+/* Historisation de l'opération                                      */
+/*********************************************************************/
+             CHGVAR     VAR(&MSGDTA) VALUE(&BLNAME)
+             CALL       PGM(UPDHST) PARM('MEP0260' &MSGDTA)
+
+             ENDPGM

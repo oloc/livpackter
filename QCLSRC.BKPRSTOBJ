@@ -1,0 +1,47 @@
+/*********************************************************************/
+/* Procédure de Retour arrière - Restauration des objets             */
+/* Les objets sont restaurés dans la lib tampon.                     */
+/*                                                                   */
+/* Olivier Locard - Prolival - 27/04/05                              */
+/* MOD OLOC 29/11/05 Ajout des commentaires pour le pilotage         */
+/*********************************************************************/
+             PGM        PARM(&BLNAME &TRI)
+
+             DCL        VAR(&BLNAME) TYPE(*CHAR) LEN(10)
+             DCL        VAR(&SVNAME) TYPE(*CHAR) LEN(10)
+             DCL        VAR(&TMPLIB) TYPE(*CHAR) LEN(10)
+             DCL        VAR(&TRI) TYPE(*CHAR) LEN(3)
+
+/*********************************************************************/
+/* Initialisation                                                    */
+/*********************************************************************/
+             /* Construction du nom du savf                          */
+             CHGVAR     VAR(&SVNAME) VALUE(&TRI *TCAT %SST(&BLNAME 4 +
+                          7))
+             /* Récupération de la lib tampon ds la dta de param.    */
+             RTVDTAARA  DTAARA(MEPPRM (1 10)) RTNVAR(&TMPLIB)
+             CLRLIB     LIB(&TMPLIB)
+
+/*********************************************************************/
+/* Message pour faciliter la maintenance, le debug et le pilotage    */
+/*********************************************************************/
+             SNDPGMMSG  MSG('### Début de la restauration des objets +
+                          de' *BCAT &BLNAME *BCAT 'depuis le SAVF' +
+                          *BCAT &SVNAME *BCAT 'dans la bibliothèque +
+                          tampon' *BCAT &TMPLIB *BCAT '. ###')
+
+/*********************************************************************/
+/* Restauration des composants dans cette lib tampon                 */
+/*********************************************************************/
+             RSTOBJ     OBJ(*ALL) SAVLIB(&TMPLIB) DEV(*SAVF) +
+                          SAVF(&SVNAME)
+             MONMSG     MSGID(CPF3770)
+
+/*********************************************************************/
+/* Message pour faciliter la maintenance, le debug et le pilotage    */
+/*********************************************************************/
+             SNDPGMMSG  MSG('### Fin de la restauration des objets +
+                          de' *BCAT &BLNAME *BCAT 'depuis le SAVF' +
+                          *BCAT &SVNAME *BCAT 'dans la bibliothèque +
+                          tampon' *BCAT &TMPLIB *BCAT '. ###')
+             ENDPGM

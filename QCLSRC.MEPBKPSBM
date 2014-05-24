@@ -1,0 +1,17 @@
+/*********************************************************************/
+/* Capsule de lancement par SBMJOB pour les adoptions de droits.     */
+/*                                                                   */
+/* Programme appelant : MEPMNU                                       */
+/*                                                                   */
+/* Olivier Locard - Prolival - 23/03/05                              */
+/* OLOC 13/08/07 Suppression du MEPBKP, passage direct au BKPPRC     */
+/*********************************************************************/
+             PGM        PARM(&BLNAME)
+
+             DCL        VAR(&BLNAME) TYPE(*CHAR) LEN(10)
+
+             SBMJOB     CMD(CALL PGM(BKPPRC) PARM(&BLNAME)) +
+                          JOB(&BLNAME) JOBD(PPPJD) USER(*CURRENT) +
+                          PRTTXT(*JOBD) CURLIB(*CRTDFT) INLLIBL(*JOBD)
+
+             ENDPGM

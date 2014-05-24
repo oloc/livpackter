@@ -1,0 +1,145 @@
+/*********************************************************************/
+/* Programme chapeau de récupération des objets cibles alloués.      */
+/* Si certains objets de production qui devraient être livrés sont   */
+/* alloués, on arrête la livraison, on remet le bon de livraison     */
+/* en traitement, et on averti l'utilisateur                         */
+/*                                                                   */
+/* Programme Appelant : MEPPRC                                       */
+/*                                                                   */
+/* Olivier Locard - Prolival 30/12/05                                */
+/* OLOC 06/03/07 Insertion de l'OVRDBF dans ce pgm et non l'appelant */
+/* OLOC 09/03/07 Nouveau format des historiques                      */
+/*********************************************************************/
+             PGM        PARM(&TRI)
+
+             /* Variables                                            */
+             DCL        VAR(&BLNAME)   TYPE(*CHAR) LEN(10)
+             DCL        VAR(&TRI)      TYPE(*CHAR) LEN(3)
+             /* Variables du programme                               */
+             DCL        VAR(&ALCNBR)   TYPE(*CHAR) LEN(3)
+             DCL        VAR(&COMPTEUR) TYPE(*DEC)  LEN(3 0) VALUE(0)
+             DCL        VAR(&MBR)      TYPE(*CHAR) LEN(10)
+             DCL        VAR(&MSGDTA)   TYPE(*CHAR) LEN(132)
+             DCL        VAR(&MSGID)    TYPE(*CHAR) LEN(7)
+             DCL        VAR(&RETOUR)   TYPE(*CHAR) LEN(1)
+             /* Variables pour le endjob                            */
+             DCL        VAR(&JOB)      TYPE(*CHAR) LEN(10)
+             DCL        VAR(&USR)      TYPE(*CHAR) LEN(10)
+             DCL        VAR(&NBR)      TYPE(*CHAR) LEN(6)
+
+             DCLF       FILE(MEPPKGPF)
+
+             /* Récupération du nom du bon de livraison              */
+             RTVDTAARA  DTAARA(MEPINF (1 10)) RTNVAR(&BLNAME)
+
+/*********************************************************************/
+/* Historisation du début du traitement des  allocations             */
+/*********************************************************************/
+             CHGVAR     VAR(&MSGID)  VALUE(&TRI *TCAT '0110')
+             CHGVAR     VAR(&MSGDTA) VALUE(&BLNAME)
+             CALL       PGM(UPDHST)  PARM(&MSGID &MSGDTA)
+
+             /* Purge du fichier de réception des allocations        */
+             CLRPFM     FILE(OBJLCKPF)
+
+/*********************************************************************/
+/* Boucle sur le bon de livraison afin de déterminer les allocations */
+/*********************************************************************/
+             OVRDBF     FILE(MEPPKGPF) TOFILE(*FILE) MBR(&BLNAME)
+ BOUCLE:     RCVF
+             MONMSG     MSGID(CPF0864) EXEC(GOTO CMDLBL(FINBOUCLE))
+
+             CHGVAR     VAR(&MBR) VALUE('*NONE')
+             /* Dans le cas d'un fichier on regarde tous les membres */
+             IF         COND((&DETTPE *EQ '*FILE') *AND ((&DETATR +
+                          *EQ 'PF') *OR (&DETATR *EQ 'LF'))) THEN(DO)
+             CHGVAR     VAR(&MBR) VALUE('*ALL')
+             ENDDO
+
+             /* Allocation de l'objet à mettre en production         */
+             CALL       PGM(CHKOBJLCK) PARM(&DETMBR &DETLIB &DETTPE +
+                          &MBR &RETOUR)
+             IF         COND(&RETOUR *EQ '1') THEN(DO)
+             CALL       PGM(UPDOBJLCK) PARM(&DETMBR &DETLIB &DETTPE)
+             CHGVAR     VAR(&COMPTEUR) VALUE(&COMPTEUR + 1)
+             ENDDO
+
+             /* Allocation du source à mettre en production          */
+             CALL       PGM(CHKOBJLCK) PARM(&DETFIL &DETSRL '*FILE' +
+                          &DETSRC &RETOUR)
+             IF         COND(&RETOUR *EQ '1') THEN(DO)
+             CALL       PGM(UPDOBJLCK) PARM(&DETFIL &DETSRL '*FILE')
+             CHGVAR     VAR(&COMPTEUR) VALUE(&COMPTEUR + 1)
+             ENDDO
+             /* Allocation de l'objet en Emergency                   */
+             IF         COND((&EMGLIB *EQ '*NONE') *OR (&DETMBR *EQ +
+                          '*NONE') *OR (&DETTPE *EQ ' ')) THEN(GOTO +
+                          CMDLBL(BOUCLE))
+             CHKOBJ     OBJ(&EMGLIB/&DETMBR) OBJTYPE(&DETTPE)
+             MONMSG     MSGID(CPF9801) EXEC(GOTO CMDLBL(BOUCLE))
+             CALL       PGM(CHKOBJLCK) PARM(&DETMBR &EMGLIB &DETTPE +
+                          &MBR &RETOUR)
+             IF         COND(&RETOUR *EQ '1') THEN(DO)
+             CALL       PGM(UPDOBJLCK) PARM(&DETMBR &EMGLIB &DETTPE)
+             CHGVAR     VAR(&COMPTEUR) VALUE(&COMPTEUR + 1)
+             ENDDO
+
+             GOTO       CMDLBL(BOUCLE)
+
+ FINBOUCLE:  DLTOVR     FILE(MEPPKGPF)
+             /* S'il n'y a pas d'allocation,  Historisation et sortie*/
+             IF         COND(&COMPTEUR *EQ 0) THEN(DO)
+             CHGVAR     VAR(&MSGID)  VALUE(&TRI *TCAT '0210')
+             CHGVAR     VAR(&MSGDTA) VALUE(&BLNAME)
+             CALL       PGM(UPDHST)  PARM(&MSGID &MSGDTA)
+             SNDPGMMSG  MSGID(CPF9898) MSGF(QCPFMSG) +
+                          MSGDTA('NO LOCK   ')
+             RETURN
+             ENDDO
+ /*******************************************************************/
+ /* Tout ce qui suit est dans le cas où on détecte des allocations  */
+ /*******************************************************************/
+             /* Dans la Dtaara d'informations on note l'alloc'      +
+             /* à la place du code application CEX                  */
+             CHGDTAARA  DTAARA(MEPINF (93 03)) VALUE('LCK')
+
+/*********************************************************************/
+/* Historisation des allocations                                     */
+/*********************************************************************/
+             /* Envoi du nombre d'allocations dans l'historique      */
+             CHGVAR    VAR(&MSGID)             VALUE(&TRI *TCAT '1011')
+             CHGVAR    VAR(&ALCNBR)            VALUE(&COMPTEUR)
+             CHGVAR    VAR(&MSGDTA)            VALUE(' ')
+             CHGVAR    VAR(%SST(&MSGDTA 1 10)) VALUE(&BLNAME)
+             CHGVAR    VAR(%SST(&MSGDTA 11 3)) VALUE(&ALCNBR)
+             CALL      PGM(UPDHST) PARM(&MSGID &MSGDTA)
+             /* Programme qui liste les allocations dans l'historique*/
+             CALL      PGM(CHKHSTLCK) PARM(&TRI)
+
+/*********************************************************************/
+/* Remise en traitement du bon de livraison - uniquement en MEP      */
+/*********************************************************************/
+             IF         COND(&TRI *EQ 'MEP') THEN(DO)
+             CALL       PGM(BKPDLVPF) PARM(&BLNAME)
+             ENDDO
+
+/*********************************************************************/
+/* Historisation de l'arrêt du traitement pour cause d'allocations   */
+/*********************************************************************/
+             CHGVAR     VAR(&MSGID)  VALUE(&TRI *TCAT '1010')
+             CHGVAR     VAR(&MSGDTA) VALUE(' ')
+             CHGVAR     VAR(&MSGDTA) VALUE(&BLNAME)
+             CALL       PGM(UPDHST)  PARM(&MSGID &MSGDTA)
+
+/*********************************************************************/
+/* Envoi de message sur l'écran de l'utilisateur faisant la MEP      */
+/*********************************************************************/
+             CALL       PGM(CHKWRNLCK)
+
+/*********************************************************************/
+/* Envoi d'un retour                                                 */
+/*********************************************************************/
+             SNDPGMMSG  MSGID(CPF9898) MSGF(QCPFMSG) +
+                          MSGDTA('ALLOCATION')
+
+             ENDPGM

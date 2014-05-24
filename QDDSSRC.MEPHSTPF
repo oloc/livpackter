@@ -1,0 +1,8 @@
+     A          R MEPHST
+     A            BLNAME        10          COLHDG('Bon de livraison')
+     A            MEPDATE        8          COLHDG('Date')
+     A            MEPTIME        8          COLHDG('Heure')
+     A            MEPUSER       10          COLHDG('Utilisateur')
+     A            APP            3          COLHDG('Application')
+     A            MSGID          7          COLHDG('Message Id')
+     A            MSGDTA       132          COLHDG('Message Data')

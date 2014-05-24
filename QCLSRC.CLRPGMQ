@@ -1,0 +1,42 @@
+     /*%CSTD==========================================================*/
+     /* Application. : OUT OUTILS                                     */
+     /* Composant. . : CLNMSG                        Type: CLP        */
+     /*===============================================================*/
+     /* Sous-système :                                                */
+     /* Fonction . . :                                                */
+     /* Sous-fonction:                                                */
+     /*%S=============================================================*/
+     /* Description des fonctionnalités:                              */
+     /*                                                               */
+     /*                                                               */
+     /*                                                               */
+     /*%E=============================================================*/
+     /* AUTEUR:                           00:00                       */
+     /* MODIFS: ** GEFFROY   19/02/1999   15:16 V 1.00.G FM N°99/0025 */
+     /*           Gérer le contrôle d'intégrité                       */
+     /*%ECSTD=========================================================*/
+     /*%ATTR LOG(*NO)                                                 */
+
+             PGM
+
+             DCL        VAR(&SENDER) TYPE(*CHAR) LEN(80)
+             DCL        VAR(&KEYVAR) TYPE(*CHAR) LEN(4)
+             DCL        VAR(&CALLER) TYPE(*CHAR) LEN(10)
+
+             MONMSG     MSGID(CPF0000) EXEC(GOTO CMDLBL(FIN))
+
+             /* Récupération du nom du programme appelant */
+             SNDPGMMSG  MSGID(CPF9898) MSGF(QCPFMSG) TOPGMQ(*PRV) +
+                          KEYVAR(&KEYVAR)
+             RCVMSG     PGMQ(*PRV) MSGKEY(&KEYVAR) SENDER(&SENDER)
+             IF   (%SST(&SENDER 56 10)= 'QCMDEXC') THEN(DO)
+             SNDPGMMSG  MSGID(CPF9898) MSGF(QCPFMSG) TOPGMQ(*PRV +
+                          ('QCMDEXC')) KEYVAR(&KEYVAR)
+             RCVMSG     PGMQ(*PRV ('QCMDEXC')) MSGKEY(&KEYVAR) +
+                          SENDER(&SENDER)
+             ENDDO
+             CHGVAR     VAR(&CALLER) VALUE(%SST(&SENDER 56 10))
+
+ RMVMSG:     RMVMSG     PGMQ(*SAME (&CALLER)) CLEAR(*ALL)
+
+ FIN:        ENDPGM

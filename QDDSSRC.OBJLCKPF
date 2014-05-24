@@ -1,0 +1,9 @@
+      * OLOC 29/11/07 Suppression de la clef unique
+     A*                                     UNIQUE
+     A          R OBJLCK
+     A            OBJ           10          COLHDG('Object')
+     A            LIB           10          COLHDG('Library')
+     A            OBJTYPE        7          COLHDG('Object Type')
+     A*         K LIB
+     A*         K OBJ
+     A*         K OBJTYPE

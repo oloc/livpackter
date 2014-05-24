@@ -1,0 +1,55 @@
+/*********************************************************************/
+/* Chronologie d'un bon de livraison                                 */
+/*                                                                   */
+/* Recuperation de l'historique d'un bon de livraison afin d'afficher*/
+/* la chronologie dans une MSGQ créée dans QTEMP                     */
+/*                                                                   */
+/* Parametre : BLNAME   Bon de Livraison                             */
+/*                                                                   */
+/* Programme appelant : DSPHST                                       */
+/* Programme appelé   : DSPCHR                                       */
+/*                                                                   */
+/*                                                                   */
+/* Hervé Esposito - Altique -  26/03/07                              */
+/*********************************************************************/
+             PGM        PARM(&BLNAME)
+             DCL        VAR(&BLNAME) TYPE(*CHAR) LEN(10)
+             DCLF       FILE(MEPHSTPF)
+
+     /* Création de la MSGQ pour afficher la chronoligie du BL */
+
+             CHKOBJ     OBJ(QTEMP/&BLNAME) OBJTYPE(*MSGQ)
+             MONMSG     MSGID(CPF9801) EXEC(CRTMSGQ +
+                          MSGQ(QTEMP/&BLNAME))
+             CLRMSGQ    MSGQ(QTEMP/&BLNAME)
+
+     /* Création du fichier de travail pour afficher           */
+     /* la chronoligie du BL                                   */
+
+             CHKOBJ     OBJ(QTEMP/TMPCHRWF) OBJTYPE(*FILE)
+             MONMSG     MSGID(CPF9801) EXEC(DO)
+             CRTDUPOBJ  OBJ(MEPHSTPF) FROMLIB(*LIBL) OBJTYPE(*FILE) +
+                          TOLIB(QTEMP) NEWOBJ(TMPCHRWF)
+             ENDDO
+
+             CLRPFM     FILE(QTEMP/TMPCHRWF)
+
+     /* Extraction des données dans le fichier de travail pour */
+     /* alimenter la MSGQ de travail                           */
+
+             CALL DSPCHR &BLNAME
+
+             OVRDBF     FILE(MEPHSTPF) TOFILE(TMPCHRWF)
+
+BOUCLE: RCVF
+             MONMSG     MSGID(CPF0864) EXEC(GOTO CMDLBL(FINBOUCLE))
+
+             SNDUSRMSG  MSGID(&MSGID) MSGF(MEPMSGF) MSGDTA(&MSGDTA) +
+                          MSGTYPE(*INFO) TOMSGQ(QTEMP/&BLNAME)
+
+                          GOTO BOUCLE
+
+ FINBOUCLE:  DLTOVR     FILE(MEPHSTPF)
+             DSPMSG     MSGQ(&BLNAME) START(*LAST)
+
+             ENDPGM

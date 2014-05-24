@@ -1,0 +1,55 @@
+/*********************************************************************/
+/* Récupération des informations liées à la mise en production       */
+/* Le tout est mis dans la Data Area MEPINF ainsi "découpée" :       */
+/*                                                                   */
+/* 01 10 Nom du bon de livraison                                     */
+/* 11 06 Numéro du job                                               */
+/* 17 10 Utilisateur du job                                          */
+/* 27 10 Nom du job                                                  */
+/* 37 10 Nom du job soumettant                                       */
+/* 47 10 Nom de l'utilisateur soumettant                             */
+/* 57 10 Nom de la msgq de la soumission                             */
+/* 67 10 Nom de la *LIB de la msgq de la soumission                  */
+/* 77 08 La date au format YYYYMMDD                                  */
+/* 85 08 L'heure au format HHMMSSDD                                  */
+/* 93 03 Code CEX de l'application                                   */
+/* 96 01 Type de job (Interactif, Batch...)                          */
+/*                                                                   */
+/* Programme appelant : Commande éponyme                             */
+/*                                                                   */
+/* Olivier Locard - Prolival 10/08/07                                */
+/*********************************************************************/
+             PGM        PARM(&BLNAME &JOB &USR &NBR &TYPE &SBMJOB +
+                          &SBMUSR &SBMMSGQ &SBMMSGQLIB &CEX &DATE +
+                          &TIME)
+
+             DCL        VAR(&BLNAME)     TYPE(*CHAR) LEN(10)
+             DCL        VAR(&JOB)        TYPE(*CHAR) LEN(10)
+             DCL        VAR(&USR)        TYPE(*CHAR) LEN(10)
+             DCL        VAR(&NBR)        TYPE(*CHAR) LEN(06)
+             DCL        VAR(&TYPE)       TYPE(*CHAR) LEN(01)
+             DCL        VAR(&SBMJOB)     TYPE(*CHAR) LEN(10)
+             DCL        VAR(&SBMUSR)     TYPE(*CHAR) LEN(10)
+             DCL        VAR(&SBMMSGQ)    TYPE(*CHAR) LEN(10)
+             DCL        VAR(&SBMMSGQLIB) TYPE(*CHAR) LEN(10)
+             DCL        VAR(&CEX)        TYPE(*CHAR) LEN(03)
+             DCL        VAR(&DATE)       TYPE(*CHAR) LEN(08)
+             DCL        VAR(&TIME)       TYPE(*CHAR) LEN(08)
+
+/*********************************************************************/
+/* Récupération des données dans la dtaara MEPINF                    */
+/*********************************************************************/
+             RTVDTAARA  DTAARA(MEPINF (01 10)) RTNVAR(&BLNAME)
+             RTVDTAARA  DTAARA(MEPINF (11 06)) RTNVAR(&NBR)
+             RTVDTAARA  DTAARA(MEPINF (17 10)) RTNVAR(&USR)
+             RTVDTAARA  DTAARA(MEPINF (27 10)) RTNVAR(&JOB)
+             RTVDTAARA  DTAARA(MEPINF (37 10)) RTNVAR(&SBMJOB)
+             RTVDTAARA  DTAARA(MEPINF (47 10)) RTNVAR(&SBMUSR)
+             RTVDTAARA  DTAARA(MEPINF (57 10)) RTNVAR(&SBMMSGQ)
+             RTVDTAARA  DTAARA(MEPINF (67 10)) RTNVAR(&SBMMSGQLIB)
+             RTVDTAARA  DTAARA(MEPINF (77 08)) RTNVAR(&DATE)
+             RTVDTAARA  DTAARA(MEPINF (85 08)) RTNVAR(&TIME)
+             RTVDTAARA  DTAARA(MEPINF (93 03)) RTNVAR(&CEX)
+             RTVDTAARA  DTAARA(MEPINF (96 01)) RTNVAR(&TYPE)
+
+             ENDPGM

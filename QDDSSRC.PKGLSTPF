@@ -1,0 +1,7 @@
+     A                                      UNIQUE
+     A          R PKGLST
+     A            BLNAME        10          COLHDG('Bon de livraison') +
+                                            ALIAS(PKGNAM)
+     A            APP            3          COLHDG('Application')
+     A* Définition de la clef
+                K BLNAME

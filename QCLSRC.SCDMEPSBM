@@ -1,0 +1,25 @@
+/*********************************************************************/
+/* Capsule de lancement par SBMJOB pour les adoptions de droits.     */
+/*                                                                   */
+/* Olivier Locard - Prolival - 07/03/05                              */
+/*********************************************************************/
+             PGM        PARM(&PKGNAM &ANNEEDEC &MOISDEC &JOURDEC)
+
+             DCL        VAR(&ANNEE) TYPE(*CHAR) LEN(2)
+             DCL        VAR(&ANNEEDEC) TYPE(*DEC) LEN(2 0)
+             DCL        VAR(&JOUR) TYPE(*CHAR) LEN(2)
+             DCL        VAR(&JOURDEC) TYPE(*DEC) LEN(2 0)
+             DCL        VAR(&MOIS) TYPE(*CHAR) LEN(2)
+             DCL        VAR(&MOISDEC) TYPE(*DEC) LEN(2 0)
+             DCL        VAR(&PKGNAM) TYPE(*CHAR) LEN(10)
+
+             CHGVAR     VAR(&ANNEE) VALUE(&ANNEEDEC)
+             CHGVAR     VAR(&MOIS) VALUE(&MOISDEC)
+             CHGVAR     VAR(&JOUR) VALUE(&JOURDEC)
+
+             SBMJOB     CMD(CALL PGM(SCDMEP) PARM(&PKGNAM &ANNEE +
+                          &MOIS &JOUR)) JOB(&PKGNAM) JOBD(PPPJD) +
+                          USER(*CURRENT) PRTTXT(*JOBD) +
+                          CURLIB(*CRTDFT) INLLIBL(*JOBD)
+
+             ENDPGM

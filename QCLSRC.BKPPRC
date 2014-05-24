@@ -1,0 +1,67 @@
+/*********************************************************************/
+/* Procédure de retour arrière. Découpé en étapes :                  */
+/* 1_ MOVOBJ des composants de Prod dans une *LIB Tampon             */
+/* 2_ Purge de la *LIB Tampon                                        */
+/* 3_ Restauration du *SAVF des composants dans la tampon            */
+/* 4_ DUPOBJ de cette restau' en production                          */
+/* 5_ Restauration du *SAVF de l'Emergency dans la tampon            */
+/* 6_ DUPOBJ de cette restau' en production                          */
+/*                                                                   */
+/* Programme appelant : MEPBKPSBM                                    */
+/*                                                                   */
+/* Olivier Locard - Prolival - 22/03/05                              */
+/* MOD OLOC 22/03/05 Prise en compte de l'Emergency                  */
+/* MOD OLOC 29/11/05 Fusion avec la procédure qui gérait l'EMG       */
+/* MOD OLOC 13/07/06 Archivage des SAVFs afin de permettre une       */
+/* nouvelle livraison du même package.                               */
+/* MOD OLOC 13/08/07 Ajout des historiques et de la MEPINF           */
+/*********************************************************************/
+             PGM        PARM(&BLNAME)
+
+             DCL        VAR(&BLNAME) TYPE(*CHAR) LEN(10)
+             DCL        VAR(&MSGDTA) TYPE(*CHAR) LEN(132) VALUE(' ')
+             DCL        VAR(&SVNAME) TYPE(*CHAR) LEN(10)
+
+             /*  Récupération des informations et mise à jour de     +
+                 la dtaarea QTEMP/MEPINF                             */
+             CALL       PGM(UPDMEPINF) PARM(&BLNAME)
+
+/*********************************************************************/
+/* Historisation du début de l'opération de backup                   */
+/*********************************************************************/
+             CHGVAR     VAR(&MSGDTA) VALUE(&BLNAME)
+             CALL       PGM(UPDHST) PARM('BKP0100' &MSGDTA)
+
+/*********************************************************************/
+/* Suppression de ce qui a été mis en production par déplacement     */
+/* vers la lib tampon que l'on purge                                 */
+/* Pas la peine pour l'Emg puisqu'elle a été vidée à la MEP          */
+/*********************************************************************/
+             CALL       PGM(MEPMOVTMP) PARM(&BLNAME 'SAV')
+
+/*********************************************************************/
+/* Restauration et remise en place des anciens composants            */
+/*********************************************************************/
+             CALL       PGM(BKPRSTDUP) PARM(&BLNAME 'SAV')
+
+/*********************************************************************/
+/* Archivage des *SAVF                                               */
+/*********************************************************************/
+             CALL       PGM(BKPRNMSAVF) PARM(&BLNAME 'SAV')
+
+/*********************************************************************/
+/* Restauration des éléments qui étaient en EMG lors de la MEP       */
+/*********************************************************************/
+             CALL       PGM(BKPRSTDUP) PARM(&BLNAME 'EMG')
+
+/*********************************************************************/
+/* Archivage des *SAVF                                               */
+/*********************************************************************/
+             CALL       PGM(BKPRNMSAVF) PARM(&BLNAME 'EMG')
+
+/*********************************************************************/
+/* Historisation de la fin de l'opération de backup                  */
+/*********************************************************************/
+             CALL       PGM(UPDHST) PARM('BKP0200' &MSGDTA)
+
+             ENDPGM

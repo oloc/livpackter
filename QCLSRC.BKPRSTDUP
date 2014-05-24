@@ -1,0 +1,20 @@
+/*********************************************************************/
+/* Programme qui regroupe les deux étapes suivantes :                */
+/* 1 _ Restauration des composants dans la *LIB tampon               */
+/* 2 _ Duplication de cette restau' dans les *LIB d'exploitation     */
+/*                                                                   */
+/* Le trigramme sert de préfixe pour les sauvegardes et pour savoir  */
+/* si c'est un déplacement depuis la prod' ou l'Emg.                 */
+/*                                                                   */
+/* Olivier Locard - Prolival - 29/11/05                              */
+/*********************************************************************/
+             PGM        PARM(&BLNAME &TRI)
+
+             DCL        VAR(&BLNAME) TYPE(*CHAR) LEN(10)
+             DCL        VAR(&TRI)    TYPE(*CHAR) LEN(3)
+
+             /* Restauration des objets dans la lib tampon           */
+             CALL       PGM(BKPRSTOBJ) PARM(&BLNAME &TRI)
+             /* Duplication des objets de tampon => Prod (Emg)      */
+             CALL       PGM(BKPDUPOBJ) PARM(&BLNAME &TRI)
+endpgm

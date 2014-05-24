@@ -1,0 +1,33 @@
+/*********************************************************************/
+/* Alimentation du fichier QDSPPKGL à partir d'un DSPFD du MEPPKGPF  */
+/* Le PKGLSTWF sert à visualiser les packages                        */
+/*                                                                   */
+/* Olivier Locard - Prolival - 17/01/06                              */
+/*********************************************************************/
+             PGM
+
+/*********************************************************************/
+/* Création du fichier des packages archivés dans le MEPPKGPF        */
+/*********************************************************************/
+             DLTF       FILE(QDSPFD)
+             MONMSG     MSGID(CPF2105)
+             DSPFD      FILE(MEPPKGPF) TYPE(*MBRLIST) +
+                          OUTPUT(*OUTFILE) OUTFILE(QTEMP/QDSPFD)
+
+             /* Création du fichier de travail qui contiendra la list*/
+             DLTF       FILE(QTEMP/PKGLSTWF)
+             MONMSG     MSGID(CPF2105)
+             CRTPF      FILE(QTEMP/PKGLSTWF) SRCFILE(QDDSSRC) +
+                          SRCMBR(PKGLSTPF)
+             DLTSPLF    FILE(PKGLSTWF)
+
+/*********************************************************************/
+/* Remplissage du PKGLSTWF avec le fichier QDSPFD                    */
+/*********************************************************************/
+             OVRDBF     FILE(QAFDMBRL) TOFILE(QDSPFD)
+             OVRDBF     FILE(PKGLSTPF) TOFILE(PKGLSTWF)
+             CALL       PGM(CVTPKGTLS)
+             DLTOVR     FILE(PKGLSTPF)
+             DLTOVR     FILE(QAFDMBRL)
+
+             ENDPGM

@@ -1,0 +1,24 @@
+/*********************************************************************/
+/* Simple duplication des fichiers LF de production dans le quai     */
+/* de livraison afin de procéder à leur attachement lors des mou-    */
+/* vements d'objets.                                                 */
+/*                                                                   */
+/* Olivier Locard - Prolival - 19/10/05                              */
+/* MOD OLOC : 09/12/05 Encapsulation dans un MONMSG au cas où le LF +*/
+/* est déjà dans le quai de livraison.                               */
+/*********************************************************************/
+             PGM        PARM(&DETMBR &DETLIB &OBJMEPLIB)
+
+             DCLF       FILE(MEPPKGPF)
+
+             CHKOBJ     OBJ(&OBJMEPLIB/&DETMBR) OBJTYPE(*FILE)
+             MONMSG     MSGID(CPF9801) EXEC(DO)
+             SNDPGMMSG  MSG('*** Duplication de l''objet :' *BCAT +
+                          &DETMBR *BCAT 'de la bibliothèque' *BCAT +
+                          &DETLIB *BCAT 'vers la bibliothèque :' +
+                          *BCAT &OBJMEPLIB *BCAT '. ***')
+             CRTDUPOBJ  OBJ(&DETMBR) FROMLIB(&DETLIB) OBJTYPE(*FILE) +
+                          TOLIB(&OBJMEPLIB)
+             ENDDO
+
+             ENDPGM

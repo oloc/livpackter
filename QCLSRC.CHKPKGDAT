@@ -1,0 +1,62 @@
+/*********************************************************************/
+/* Vérification de la cohérence de date entre le bon de livraison    */
+/* et les objets.                                                    */
+/*                                                                   */
+/* Programme appelant : CHKPKG                                       */
+/*                                                                   */
+/* Olivier Locard - Prolival - 08/10/07                              */
+/*********************************************************************/
+             PGM        PARM(&BLNAME)
+
+             DCL        VAR(&BLNAME) TYPE(*CHAR) LEN(10)
+             DCL        VAR(&MSGDTA) TYPE(*CHAR) LEN(132) VALUE(' ')
+             DCL        VAR(&MSGFIN) TYPE(*CHAR) LEN(7) +
+                        VALUE('CHK0110')
+             DCL        VAR(&MSGID)  TYPE(*CHAR) LEN(7)
+             /* &RTVCHGDATE est au format CYYMMDDHHMMSS              */
+             DCL        VAR(&RTVCHGDATE) TYPE(*CHAR) LEN(13)
+             DCL        VAR(&CHGDATE)    TYPE(*CHAR) LEN(6)
+             DCL        VAR(&JULDATE)    TYPE(*CHAR) LEN(5)
+
+             DCLF       FILE(MEPPKGPF)
+
+/*********************************************************************/
+/* Boucle sur le BL pour effectuer des dspobjds                      */
+/*********************************************************************/
+             OVRDBF     FILE(MEPPKGPF) TOFILE(&BLNAME)
+ BOUCLE:     RCVF
+             MONMSG     MSGID(CPF0864) EXEC(GOTO CMDLBL(FINBOUCLE))
+
+             /* Vérification que l'objet n'est pas en suppression    */
+             IF         COND(&DETACT *EQ '3') THEN(GOTO CMDLBL(BOUCLE))
+
+             /* Vérification de présence de l'objet avec type        */
+             IF         COND((&DETLIB *EQ '*NONE')  *OR +
+                             (&DETMBR *EQ '*NONE')  *OR +
+                             (&DETTPE *EQ '     '))     +
+             THEN(                                      +
+             GOTO       CMDLBL(BOUCLE) )
+
+             RTVOBJD    OBJ(&DETLIB/&DETMBR) OBJTYPE(&DETTPE) +
+                          CHGDATE(&RTVCHGDATE)
+             CHGVAR     VAR(&CHGDATE) VALUE(%SST(&RTVCHGDATE 2 6))
+             CVTDAT     DATE(&CHGDATE) TOVAR(&JULDATE) FROMFMT(*YMD) +
+                          TOFMT(*JUL) TOSEP(*NONE)
+
+             IF         COND(%SST(&BLNAME 4 3) *NE %SST(&JULDATE 3 +
+                          3)) THEN(DO)
+             CHGVAR     VAR(&MSGFIN) VALUE('CHK1010')
+             CHGVAR     VAR(&MSGID)  VALUE('CHK1011')
+             CHGVAR     VAR(&MSGDTA) VALUE(' ')
+             CHGVAR     VAR(%SST(&MSGDTA 01 10)) VALUE(&BLNAME)
+             CHGVAR     VAR(%SST(&MSGDTA 11 10)) VALUE(&DETMBR)
+             CHGVAR     VAR(%SST(&MSGDTA 21 10)) VALUE(&DETLIB)
+             CHGVAR     VAR(%SST(&MSGDTA 31 07)) VALUE(&DETTPE)
+             CALL       PGM(UPDHST) PARM(&MSGID &MSGDTA)
+             ENDDO
+
+             GOTO       CMDLBL(BOUCLE)
+
+ FINBOUCLE:  SNDPGMMSG  MSGID(&MSGFIN) MSGF(MEPMSGF) MSGDTA(&BLNAME)
+
+             ENDPGM

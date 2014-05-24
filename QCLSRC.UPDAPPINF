@@ -1,0 +1,24 @@
+/*********************************************************************/
+/* Récupération des informations liées à la mise en production       */
+/* Le tout est mis dans la Data Area MEPINF ainsi "découpée" :       */
+/*                                                                   */
+/* 93 03 Code CEX de l'application                                   */
+/*                                                                   */
+/* Programme appelant : UPDMEPINF                                    */
+/*                                                                   */
+/* Olivier Locard - Prolival - 07/08/07                              */
+/*********************************************************************/
+             PGM        PARM(&BLNAME)
+
+             DCL        VAR(&BLNAME) TYPE(*CHAR) LEN(10)
+             /* Variable du code CEX de l'application                */
+             DCL        VAR(&APP) TYPE(*CHAR) LEN(3)
+
+/*********************************************************************/
+/* Récupération du code CEX de l'application                         */
+/*********************************************************************/
+             CALL       PGM(RTVAPPVAL) PARM(&BLNAME &APP)
+
+             CHGDTAARA  DTAARA(MEPINF (93 03)) VALUE(&APP)
+
+ FIN:        ENDPGM

@@ -1,0 +1,20 @@
+     A                                      UNIQUE
+     A          R TBL301
+     A            ENVRIN        10          COLHDG('Environment name')
+                                            ALIAS(ENVNAM)
+     A            EOBJCD         7          COLHDG('Object code')
+                                            ALIAS(OBJCOD)
+     A            ESRCFL        10          COLHDG('Source file name')
+                                            ALIAS(SRCFILNAM)
+     A            EDSTLB        10          COLHDG('Object library name')
+                                            ALIAS(LIBNAM)
+     A            ECOBLB        10          COLHDG('Derived obj lib name')
+                                            ALIAS(DRVOBJLIB)
+     A            ESRCLB        10          COLHDG('Source library name')
+                                            ALIAS(SRCLIBNAM)
+     A            ECSRLB        10          COLHDG('Derived src lib name')
+                                            ALIAS(DRVSRCLIB)
+     A            CRTSEQNBR      4          COLHDG('Create sequence nbr')
+     A            CSVDTA         1          COLHDG('Conservation Donnees')
+                K EOBJCD
+                K ENVRIN

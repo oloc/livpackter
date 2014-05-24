@@ -1,0 +1,26 @@
+     H**********************************************************************
+     H* Au travers du Bon de livraison, on rédige l'historique en ajoutant
+     H* le nom du BL
+     H*
+     H* 90 : No Record in the file (Chain)
+     H* 99 : EOF
+     H*
+     H* Olivier Locard - Prolival - 26/12/05
+     H**********************************************************************
+     FMEPPKGPF  IF   E           K DISK    RENAME(MEPPKG:MEPPKGR)
+     FPKGLOGPF  UF A E           K DISK    RENAME(PKGLOG:PKGLOGR)
+     F*
+     C     *ENTRY        PLIST
+     C                   PARM                    BLNAME           10
+     C*
+     C* Boucle sur la lecture du fichier Bon de livraison
+     C     *IN99         DOWEQ     '0'
+     C                   READ      MEPPKGR                                99
+     C     *IN99         CABEQ     '1'           FIN
+     C* Ajout du bon de livraison à la fin de l'historique
+     C                   WRITE     PKGLOGR
+     C                   ENDDO
+     C* Fin de programme
+     C     FIN           TAG
+     C                   CLOSE     PKGLOGPF
+     C                   SETON                                            LR

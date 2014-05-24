@@ -1,0 +1,53 @@
+/*********************************************************************/
+/* Programme de changement de mot de passe                           */
+/*                                                                   */
+/* Programme appelant : MEPMNU                                       */
+/*                                                                   */
+/* Olivier Locard - Prolival - 23/03/07                              */
+/*********************************************************************/
+             PGM
+
+             /* Variables pour la gestion des messages               */
+             DCL        VAR(&ERRORSW) TYPE(*LGL)
+             DCL        VAR(&MSGID)   TYPE(*CHAR) LEN(7)
+             DCL        VAR(&MSGDTA)  TYPE(*CHAR) LEN(100)
+             DCL        VAR(&MSGF)    TYPE(*CHAR) LEN(10)
+             DCL        VAR(&MSGFLIB) TYPE(*CHAR) LEN(10)
+
+             MONMSG     MSGID(CPF0000) EXEC(GOTO CMDLBL(ERREUR))
+
+             CHGPWD
+             DLYJOB     DLY(1)
+
+/* Renvoi des messages de type *COMP si fin normale                  */
+COMPMSG:    RCVMSG     MSGTYPE(*COMP) MSGDTA(&MSGDTA) MSGID(&MSGID) +
+                         MSGF(&MSGF) SNDMSGFLIB(&MSGFLIB)
+            IF         (&MSGID *EQ '       ') RETURN  /* Fin du pgm  */
+            SNDPGMMSG  MSGID(&MSGID) MSGF(&MSGFLIB/&MSGF) +
+                         MSGDTA(&MSGDTA) MSGTYPE(*COMP)
+            GOTO       COMPMSG /* Boucle sur messages *COMP          */
+/*********************************************************************/
+/* Gestion des erreurs                                               */
+/*********************************************************************/
+             /* La seconde fois on arrête le programme               */
+ ERREUR:     IF         COND(&ERRORSW) THEN(SNDPGMMSG MSGID(CPF9899) +
+                          MSGF(QCPFMSG) MSGTYPE(*ESCAPE))
+             /* Mise en place du switch                              */
+             CHGVAR     VAR(&ERRORSW) VALUE('1')
+
+ /* Renvoi des messages de type *DIAG si fin anormale                */
+ DIAGMSG:    RCVMSG     MSGTYPE(*DIAG) MSGDTA(&MSGDTA) MSGID(&MSGID) +
+                          MSGF(&MSGF) SNDMSGFLIB(&MSGFLIB)
+             IF         COND(&MSGID *EQ '       ') THEN(GOTO +
+                          CMDLBL(EXCPMSG))
+             SNDPGMMSG  MSGID(&MSGID) MSGF(&MSGFLIB/&MSGF) +
+                          MSGDTA(&MSGDTA) MSGTYPE(*DIAG)
+             GOTO       CMDLBL(DIAGMSG) /* Boucle sur msg *DIAG      */
+
+/* Renvoi du message d'erreur                                        */
+ EXCPMSG:    RCVMSG     MSGTYPE(*EXCP) MSGDTA(&MSGDTA) MSGID(&MSGID) +
+                          MSGF(&MSGF) SNDMSGFLIB(&MSGFLIB)
+             SNDPGMMSG  MSGID(&MSGID) MSGF(&MSGFLIB/&MSGF) +
+                          MSGDTA(&MSGDTA) MSGTYPE(*ESCAPE)
+
+ ENDPGM:     ENDPGM

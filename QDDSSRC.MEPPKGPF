@@ -1,0 +1,47 @@
+     A                                      UNIQUE
+     A          R MEPPKG
+     A* Données tirées du MWIPF110
+     A            DMWINO         4          COLHDG('Request Number')  +
+                                            ALIAS(RQSNBR)
+     A            DETMBR        10          COLHDG('Mbr/Obj name')    +
+                                            ALIAS(MBONAM)
+     A            DETTYP         7          COLHDG('Object Code')     +
+                                            ALIAS(OBJCOD)
+     A            DETACT         1          COLHDG('Action to perform  ') +
+                                            ALIAS(MBOACTTYP)
+     A            DETTRG        10          COLHDG('Target Environment') +
+                                            ALIAS(ENVNAM)
+     A            DETLIB        10          COLHDG('Env Library')     +
+                                            ALIAS(LIBNAM)
+     A            DETSRL        10          COLHDG('Source Library')  +
+                                            ALIAS(RQSSRCLIB)
+     A            DETFIL        10          COLHDG('Source File')     +
+                                            ALIAS(SRCFILNAM)
+     A            DETSRC        10          COLHDG('Source Member')   +
+                                            ALIAS(RQSSRCMBR)
+     A            DOBOWN        10          COLHDG('Object Owner')    +
+                                            ALIAS(OBJOWNNAM)
+     A            DETTPE         8          COLHDG('Object Type')     +
+                                            ALIAS(OBJTYP)
+     A            DETATR        10          COLHDG('Object Attribute') +
+                                            ALIAS(OBJATR)
+     A            RDSMTY        10          COLHDG('Source Member Type') +
+                                            ALIAS(SRCMBRTYP)
+     A* Données tirées du MWIPF300
+     A            SYSNAM        10          COLHDG('System Name')     +
+                                            ALIAS(SYSNAME)
+     A* Données définies dans le cadre du Livpackter
+     A            OBJMEPLIB     10          COLHDG('Object MEP Library')
+     A            SRCMEPLIB     10          COLHDG('Source MEP Library')
+     A            MEPDATE        8          COLHDG('Date de M.E.P.')
+     A            APP            3          COLHDG('Application')
+     A            EMGLIB        10          COLHDG('Emergency Library')
+     A            CRTSEQNBR      4          COLHDG('Create sequence nbr')
+     A            CSVDTA         1          COLHDG('Conservation Donnees')
+     A* Définition de la clef
+                K DMWINO
+                K CRTSEQNBR
+                K DETMBR
+                K DETTYP
+                K SYSNAM
+                K DETTRG

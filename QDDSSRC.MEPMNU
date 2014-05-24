@@ -1,0 +1,406 @@
+     A                                      DSPSIZ(24 80 *DS3)
+     A                                      CF02(02 'Tools')
+     A                                      CF03(03 'Exit')
+     A                                      CF06(06 'Chgpwd')
+     A                                      CF09(09 'Historiques')
+     A                                      CF12(12 'Cancel')
+     A*****************************************************************
+     A          R MASQUE
+     A                                      PAGEDOWN(50 'Pagedown')
+     A                                      PAGEUP(60 'Pageup')
+     A                                  1 20'-----------------------------------
+     A                                      -------'
+     A                                      COLOR(BLU)
+     A                                  3 20'-----------------------------------
+     A                                      -------'
+     A                                      COLOR(BLU)
+     A                                  1 70SYSNAME
+     A                                 22  2'F2=Tools F3=Exit F6=ChangePasse F9-
+     A                                      =Historiques F12=Cancel'
+     A                                      COLOR(BLU)
+     A            MSG           80A  O 24  1COLOR(WHT)
+     A                                  1  3'LIVPACKTER'
+     A                                      COLOR(BLU)
+     A            VERSION        8A  O  2  4MSGID(MEP 0000 MEPMSGF)
+     A                                      COLOR(BLU)
+     A                                  2 70TIME
+     A*****************************************************************
+     A          R MEPMAIN
+     A                                      OVERLAY
+     A                                      CLRL(*NO)
+     A                                      PAGEDOWN(50 'Pagedown')
+     A                                      PAGEUP(60 'Pageup')
+     A                                  2 21' Livraison de packages MKS Impleme-
+     A                                      nter '
+     A                                      COLOR(RED)
+     A                                      DSPATR(HI)
+     A                                      DSPATR(RI)
+     A            CHOIX          1S 0I  5 19COLOR(WHT)
+     A                                  5 10'Choix :'
+     A                                      COLOR(BLU)
+     A                                  7 23'1.'
+     A                                      COLOR(RED)
+     A                                  9 23'2.'
+     A                                      COLOR(RED)
+     A                                 15 23'5.'
+     A                                      COLOR(RED)
+     A                                 19 23'7.'
+     A                                      COLOR(RED)
+     A                                  7 26'Livraison immédiate'
+     A                                      COLOR(BLU)
+     A                                  9 26'Livraison planifiée'
+     A                                      COLOR(BLU)
+     A                                 15 26'Suppression d''une planification'
+     A                                      COLOR(BLU)
+     A                                 19 26'Retour arrière d''un package'
+     A                                      COLOR(BLU)
+     A            MSG           80A  O 24  1COLOR(WHT)
+     A                                 13 23'4.'
+     A                                      COLOR(RED)
+     A                                 13 26'Suppression d''un package'
+     A                                      COLOR(BLU)
+     A*****************************************************************
+     A          R HISTORICS
+     A                                      OVERLAY
+     A                                      CLRL(*NO)
+     A                                      PAGEDOWN(50 'Pagedown')
+     A                                      PAGEUP(60 'Pageup')
+     A                                  2 22'      Historiques du Livpackter   -
+     A                                         '
+     A                                      COLOR(RED)
+     A                                      DSPATR(HI)
+     A                                      DSPATR(RI)
+     A                                  5 10'Choix :'
+     A                                      COLOR(BLU)
+     A            CHOIX          1S 0I  5 19COLOR(WHT)
+     A                                  7 23'1.'
+     A                                      COLOR(RED)
+     A                                  7 26'Historique des livraisons'
+     A                                      COLOR(BLU)
+     A                                  8 23'2.'
+     A                                      COLOR(RED)
+     A                                  8 26'Planifications actuelles'
+     A                                      COLOR(BLU)
+     A                                  9 23'3.'
+     A                                      COLOR(RED)
+     A                                  9 26'Historique des planifications'
+     A                                      COLOR(BLU)
+     A                                 10 23'4.'
+     A                                      COLOR(RED)
+     A                                 10 26'Historique des packages supprimés'
+     A                                      COLOR(BLU)
+     A                                 11 23'5.'
+     A                                      COLOR(RED)
+     A                                 11 26'Historique des suppression de plan-
+     A                                      ification'
+     A                                      COLOR(BLU)
+     A                                 13 23'6.'
+     A                                      COLOR(RED)
+     A                                 13 26'Historique des créations de bon de-
+     A                                       livraison'
+     A                                      COLOR(BLU)
+     A                                 14 23'7.'
+     A                                      COLOR(RED)
+     A                                 14 26'Historique des retours arrière'
+     A                                      COLOR(BLU)
+     A                                 15 23'8.'
+     A                                      COLOR(RED)
+     A                                 15 26'Historique des objets alloués'
+     A                                      COLOR(BLU)
+     A            MSG           80A  O 24  1COLOR(WHT)
+     A*****************************************************************
+     A          R TOOLS
+     A                                      OVERLAY
+     A                                      CLRL(*NO)
+     A                                      PAGEDOWN(50 'Pagedown')
+     A                                      PAGEUP(60 'Pageup')
+     A            CHOIX          1N 0I  5 19COLOR(WHT)
+     A            MSG           80A  O 24  1COLOR(WHT)
+     A                                  2 22'         Outils du Livpackter     -
+     A                                         '
+     A                                      DSPATR(HI)
+     A                                      DSPATR(RI)
+     A                                      COLOR(RED)
+     A                                  5 10'Choix :'
+     A                                      COLOR(BLU)
+     A                                  7 23'1.'
+     A                                      COLOR(RED)
+     A                                  9 23'2.'
+     A                                      COLOR(RED)
+     A                                 11 23'3.'
+     A                                      COLOR(RED)
+     A                                 13 23'4.'
+     A                                      COLOR(RED)
+     A                                 15 23'5.'
+     A                                      COLOR(RED)
+     A                                 19 23'7.'
+     A                                      COLOR(RED)
+     A                                  7 26'Visualisation d''un package'
+     A                                      COLOR(BLU)
+     A                                  9 26'Remise en traitement d''un package'
+     A                                      COLOR(BLU)
+     A                                 17 23'6.'
+     A                                      COLOR(RED)
+     A                                 19 26'Commandes iSeries'
+     A                                      COLOR(BLU)
+     A                                 15 26'Redémarrage du MKS Receiver'
+     A                                      COLOR(BLU)
+     A*****************************************************************
+     A          R MEPPLAN
+     A                                      OVERLAY
+     A                                      CLRL(*NO)
+     A                                      CF04(04 'Prompt')
+     A                                  2 31'Livraison planifiée'
+     A                                      COLOR(BLU)
+     A                                  8 21'Nom du package :'
+     A                                      COLOR(BLU)
+     A            PKGNAM        10A  B  8 40COLOR(WHT)
+     A                                 10 21'Date du jour   :'
+     A                                      COLOR(WHT)
+     A                                 10 41DATE
+     A                                      EDTCDE(Y)
+     A                                      COLOR(YLW)
+     A                                 12 21'Date de MEP    :'
+     A                                      COLOR(BLU)
+     A            JOUR           2S 0B 12 40
+     A            MOIS           2S 0B 12 44
+     A            ANNEE          2S 0B 12 48
+     A                                 12 53'(JJ/MM/AA)'
+     A            MSG           80A  O 24  1COLOR(WHT)
+     A*****************************************************************
+     A          R PKGRECH
+     A                                      OVERLAY
+     A                                      CLRL(*NO)
+     A                                  2 30'Recherche d''un package'
+     A                                      COLOR(BLU)
+     A                                  8 21'Nom du package :'
+     A                                      COLOR(BLU)
+     A                                 10 21'Nom de l objet :'
+     A                                      COLOR(BLU)
+     A                                 12 21'Date de MEP    :'
+     A                                      COLOR(BLU)
+     A            PKGNAM        10A  I  8 38COLOR(WHT)
+     A            MEPOBJNAM     10A  I 10 38COLOR(WHT)
+     A            MEPDATE        8A  I 12 38COLOR(WHT)
+     A            MSG           80A  O 24  1COLOR(WHT)
+     A*****************************************************************
+     A          R PKGLIV
+     A                                      OVERLAY
+     A                                      CLRL(*NO)
+     A                                      CF04(04 'Prompt')
+     A                                  2 31'Livraison immédiate'
+     A                                      COLOR(BLU)
+     A                                  8 25'Nom du package :'
+     A                                      COLOR(BLU)
+     A                                      DSPATR(BL)
+     A            PKGNAM        10A  B  8 46COLOR(WHT)
+     A                                 14 21'Attention mise en production imméd-
+     A                                      iate |'
+     A                                      DSPATR(BL)
+     A                                      DSPATR(HI)
+     A                                      COLOR(YLW)
+     A                                      DSPATR(RI)
+     A            MSG           80A  O 24  1COLOR(WHT)
+     A*****************************************************************
+     A          R PKGDLT
+     A                                      OVERLAY
+     A                                      CLRL(*NO)
+     A                                      CF04(04 'Prompt')
+     A                                  2 29'Suppression d''un package'
+     A                                      COLOR(RED)
+     A                                      DSPATR(RI)
+     A                                      DSPATR(BL)
+     A                                  8 25'Nom du package :'
+     A                                      COLOR(RED)
+     A            PKGNAM        10A  B  8 46COLOR(WHT)
+     A                                 14 15'Attention vous allez supprimer un -
+     A                                      bon de livraison.'
+     A                                      DSPATR(HI)
+     A                                 18 24'Cette suppression sera historisée.'
+     A                                      COLOR(WHT)
+     A                                 16 13'Aucune manipulation ne pourra annu-
+     A                                      ler cette suppression.'
+     A                                      COLOR(WHT)
+     A            MSG           80A  O 24  1COLOR(WHT)
+     A*****************************************************************
+     A          R SCDDLT
+     A                                      OVERLAY
+     A                                      CLRL(*NO)
+     A                                      CF04(04 'Prompt')
+     A                                  2 25'Suppression d''une planification'
+     A                                      DSPATR(RI)
+     A                                      COLOR(RED)
+     A                                  8 25'Nom du package :'
+     A                                      COLOR(BLU)
+     A            PKGNAM        10A  B  8 46COLOR(WHT)
+     A                                 10 25'Date planifiée :'
+     A                                      COLOR(BLU)
+     A            MEPDATE        8A  B 10 47
+     A                                 15 16'Attention vous allez supprimer une-
+     A                                       planification |'
+     A                                      DSPATR(BL)
+     A                                      DSPATR(RI)
+     A                                      COLOR(YLW)
+     A                                 17 18'Les objets du package ne seront pa-
+     A                                      s impactés.'
+     A                                 18 10'Seule la planification sera suppri-
+     A                                      mée et pourra être recréée.'
+     A            MSG           80A  O 24  1COLOR(WHT)
+     A*****************************************************************
+     A          R PKGBKP
+     A                                      OVERLAY
+     A                                      CLRL(*NO)
+     A                                      CF04(04 'Prompt')
+     A                                  2 27'Retour arrière d''un package'
+     A                                      DSPATR(RI)
+     A                                      COLOR(RED)
+     A                                      DSPATR(BL)
+     A                                  8 25'Nom du package :'
+     A                                      COLOR(RED)
+     A            PKGNAM        10A  B  8 46COLOR(WHT)
+     A                                 14 19'Attention vous allez annuler une l-
+     A                                      ivraison |'
+     A                                      DSPATR(BL)
+     A                                      DSPATR(RI)
+     A                                      COLOR(YLW)
+     A            MSG           80A  O 24  1COLOR(WHT)
+     A*****************************************************************
+     A          R PKGDSP
+     A                                      OVERLAY
+     A                                      CLRL(*NO)
+     A                                      CF04(04 'Prompt')
+     A                                  2 28'Visualisation d''un package'
+     A                                      COLOR(BLU)
+     A                                  8 25'Nom du package :'
+     A                                      COLOR(BLU)
+     A                                      DSPATR(BL)
+     A            PKGNAM        10A  B  8 46COLOR(WHT)
+     A                                 14 16'Ceci n''est qu''une visualisation -
+     A                                      sans aucun impact.'
+     A                                      DSPATR(BL)
+     A                                      DSPATR(HI)
+     A                                      COLOR(YLW)
+     A                                      DSPATR(RI)
+     A            MSG           80A  O 24  1COLOR(WHT)
+     A*****************************************************************
+     A          R BKPDLV
+     A                                      OVERLAY
+     A                                      CLRL(*NO)
+     A                                      CF04(04 'Prompt')
+     A            PKGNAM        10A  B  8 46COLOR(WHT)
+     A            MSG           80A  O 24  1COLOR(WHT)
+     A                                  2 24'Remise en traitement d''un package'
+     A                                      DSPATR(RI)
+     A                                      COLOR(RED)
+     A                                  8 25'Nom du package :'
+     A                                      COLOR(RED)
+     A                                 14 13'Attention vous allez remettre en t-
+     A                                      raitement un package |'
+     A                                      DSPATR(BL)
+     A                                      DSPATR(RI)
+     A                                      COLOR(YLW)
+     A                                 16 15'Ce qui veut dire qu''il pourra à n-
+     A                                      ouveau être livré.'
+     A                                      DSPATR(RI)
+     A                                      COLOR(YLW)
+     A*****************************************************************
+     A          R CMD
+     A                                      OVERLAY
+     A                                      CLRL(*NO)
+     A                                      PAGEDOWN(50 'Pagedown')
+     A                                      PAGEUP(60 'Pageup')
+     A            CHOIXCMD       2N 0I  5 19COLOR(WHT)
+     A            MSG           80A  O 24  1COLOR(WHT)
+     A* Titre
+     A                                  2 22'          Commandes iSeries       -
+     A                                         '
+     A                                      DSPATR(HI)
+     A                                      DSPATR(RI)
+     A                                      COLOR(RED)
+     A* Colonne de gauche
+     A                                  5 10'Choix :'
+     A                                      COLOR(BLU)
+     A                                  7  2'01.'
+     A                                      COLOR(RED)
+     A                                  7  6'DSPOBJD   - Visu. desc. de l objet'
+     A                                      COLOR(BLU)
+     A                                  8  2'02.'
+     A                                      COLOR(RED)
+     A                                  8  6'DSPOBJAUT - Visu. des droits objet'
+     A                                      COLOR(BLU)
+     A                                  9  2'03.'
+     A                                      COLOR(RED)
+     A                                  9  6'DSPFD     - Visu. desc. de fichier'
+     A                                      COLOR(BLU)
+     A                                 10  2'04.'
+     A                                      COLOR(RED)
+     A                                 10  6'DSPFFD    - Visu. desc. zones'
+     A                                      COLOR(BLU)
+     A                                 11  2'05.'
+     A                                      COLOR(RED)
+     A                                 11  6'DSPPGM    - Visu. programme'
+     A                                      COLOR(BLU)
+     A                                 13  2'06.'
+     A                                      COLOR(RED)
+     A                                 13  6'DSPPFM    - Visu. du fichier phys.'
+     A                                      COLOR(BLU)
+     A                                 14  2'07.'
+     A                                      COLOR(RED)
+     A                                 14  6'DSPSPLF   - Visu. d''un spoule'
+     A                                      COLOR(BLU)
+     A                                 15  2'08.'
+     A                                      COLOR(RED)
+     A                                 15  6'DSPDTAARA - Visu. d''une data area'
+     A                                      COLOR(BLU)
+     A* Colonne de droite
+     A                                  7 42'11.'
+     A                                      COLOR(RED)
+     A                                  7 46'DSPLOG    - Visu. de l''historique'
+     A                                      COLOR(BLU)
+     A                                  8 42'12.'
+     A                                      COLOR(RED)
+     A                                  8 46'DSPMSG    - Visu. des messages'
+     A                                      COLOR(BLU)
+     A                                  9 42'13.'
+     A                                      COLOR(RED)
+     A                                  9 46'DSPJOB    - Visu. d''un job'
+     A                                      COLOR(BLU)
+     A                                 13 42'16.'
+     A                                      COLOR(RED)
+     A                                 13 46'EDTLIBL   - Modif. de la *LIBL'
+     A                                      COLOR(BLU)
+     A*****************************************************************
+     A          R INI
+     A                                      OVERLAY
+     A                                      CLRL(*NO)
+     A                                      CF07(07 'VALID')
+     A                                  2 27'Initialisation du Livpackter'
+     A                                      DSPATR(BL)
+     A                                      COLOR(RED)
+     A                                      DSPATR(RI)
+     A                                  8 20'Voulez-vous initialiser Livpackter-
+     A                                       ?'
+     A                                      COLOR(RED)
+     A            REPONSE        3A  B  8 59COLOR(RED)
+     A                                 12 14'Cette initialisation effectue :'
+     A                                      COLOR(WHT)
+     A                                 14 14'_ Mise à blanc de tous les histori-
+     A                                      ques'
+     A                                      COLOR(WHT)
+     A                                 15 14'_ Suppression de tous les bons de -
+     A                                      livraison archivés'
+     A                                      COLOR(WHT)
+     A                                 16 14'_ Suppression de tous les bons de -
+     A                                      livraison en attente'
+     A                                      COLOR(WHT)
+     A                                 17 14'_ Suppression de toutes les sauveg-
+     A                                      ardes d''Emergency'
+     A                                      COLOR(WHT)
+     A                                 18 14'_ Suppression de toutes les sauveg-
+     A                                      ardes d''exploitation'
+     A                                      COLOR(WHT)
+     A                                  8 63'(OUI/NON)'
+     A                                      COLOR(RED)
+     A                                 10 32'Validation par F7'
+     A                                      DSPATR(HI)
+     A                                      COLOR(YLW)

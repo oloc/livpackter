@@ -1,0 +1,59 @@
+     A*%%TS  SD  20050315  111154  HFRADMOL01  REL-V5R2M0  5722-WDS
+     A*%%EC
+     A                                      DSPSIZ(24 80 *DS3)
+     A                                      REF(*LIBL/MEPLOGPF)
+     A                                      INDARA
+     A                                      PRINT
+     A                                      CA03(03 'END OF JOB')
+     A                                      CA12(12 'END OF JOB')
+     A* Subfile Record Format *****************************************
+     A          R SUBFILE                   SFL
+     A                                      TEXT('Subfile Record')
+     A*                                     SFLNXTCHG
+     A            OPT            1A  B  7 13
+     A            BLNAME    R        O  7 17
+     A            MEPUSER   R        O  7 30
+     A            MEPDATE   R        O  7 43
+     A            MEPTIME   R        O  7 54
+     A            APP       R        O  7 66
+     A* Subfile Control-Recored Format ********************************
+     A          R CTLFILE                   SFLCTL(SUBFILE)
+     A                                      TEXT('Subfile Control-Record')
+     A                                      SFLSIZ(0016)
+     A                                      SFLPAG(0015)
+     A N91                                  ROLLUP(95 'Suite ...')
+     A*                                     SFLDROP(CF24)
+     A                                      OVERLAY
+     A  72                                  SFLDSP
+     A  73                                  SFLDSPCTL
+     A  71                                  SFLCLR
+     A  91                                  SFLEND
+     A  33                                  SFLMSG('Erreur' 33)
+     A*           RECNUM         4S 0H      SFLRCDNBR(CURSOR)
+     A                                  6 17'Package  :'
+     A                                      COLOR(WHT)
+     A                                  6 30'Utilisat.:'
+     A                                      COLOR(WHT)
+     A                                  6 43'Date   :'
+     A                                      COLOR(WHT)
+     A                                  6 54'Heure  :'
+     A                                      COLOR(WHT)
+     A                                  6 65'Cex :'
+     A                                      COLOR(WHT)
+     A* Head Format ***************************************************
+     A          R HEAD
+     A                                      TEXT('En-tête de page')
+     A                                      OVERLAY
+     A                                  1 36'Historique'
+     A                                      DSPATR(HI)
+     A            TITRE         22   O  2 30COLOR(WHT)
+     A                                  1 70SYSNAME
+     A                                  2 70TIME
+     A                                  4  2'1=Sélection 5=Détails'
+     A                                      COLOR(BLU)
+     A* Foot Format ***************************************************
+     A          R FOOT
+     A                                      TEXT('Pied de page')
+     A                                      OVERLAY
+     A                                 23  2'F3=Exit F12=Cancel'
+     A                                      COLOR(BLU)

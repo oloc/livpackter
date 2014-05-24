@@ -1,0 +1,159 @@
+/*********************************************************************/
+/* Pgm appelant : CHKPKGLCK                                          */
+/* Constitution d'un fichier d'allocation puis on le lit afin de     */
+/* déterminer si l'objet est alloué ou non.                          */
+/*                                                                   */
+/* Olivier Locard - Prolival - 29/12/05                              */
+/* OLOC 26/05/06 : refonte totale pour l'API QWCLOBJL                */
+/* OLOC 12/07/06 : Vérification de l'existence de l'objet            */
+/*********************************************************************/
+             PGM        PARM(&OBJ &LIB &OBJTYPE &MBR &RETOUR)
+
+             DCL        VAR(&OBJ)       TYPE(*CHAR) LEN(10)
+             DCL        VAR(&LIB)       TYPE(*CHAR) LEN(10)
+             DCL        VAR(&OBJTYPE)   TYPE(*CHAR) LEN(7)
+             DCL        VAR(&MBR)       TYPE(*CHAR) LEN(10)
+             DCL        VAR(&RETOUR)    TYPE(*CHAR) LEN(1)
+
+             DCL        VAR(&FLDLEN)    TYPE(*DEC)  LEN(5 0)
+             /* Variables pour job d'allocation                      */
+             DCL        VAR(&NBR)       TYPE(*CHAR) LEN(6)
+             DCL        VAR(&USR)       TYPE(*CHAR) LEN(10)
+             DCL        VAR(&JOB)       TYPE(*CHAR) LEN(10)
+             /* Variables communes aux APIs                          */
+             DCL        VAR(&ERREUR)    TYPE(*CHAR) LEN(256)
+             DCL        VAR(&FORMAT)    TYPE(*CHAR) LEN(8)
+             DCL        VAR(&QUSRSPC)   TYPE(*CHAR) LEN(20)
+             DCL        VAR(&SPCSIZ)    TYPE(*CHAR) LEN(4)
+             DCL        VAR(&SPCSIZDEC) TYPE(*DEC)  LEN(4 0)
+             /* Variables pour le QUSCRTUS - Create Usrspc           */
+             DCL        VAR(&DESC)      TYPE(*CHAR) LEN(50)
+             DCL        VAR(&INITSIZE)  TYPE(*CHAR) LEN(4)
+             DCL        VAR(&INITVALUE) TYPE(*CHAR) LEN(1)
+             DCL        VAR(&PUBAUTH)   TYPE(*CHAR) LEN(10)
+             DCL        VAR(&REPLACE)   TYPE(*CHAR) LEN(10)
+             DCL        VAR(&XTDATT)    TYPE(*CHAR) LEN(10)
+             /* Variables pour le QWCLOBJL                           */
+             DCL        VAR(&APIOBJTYP) TYPE(*CHAR) LEN(10)
+             DCL        VAR(&QOBJNAM)   TYPE(*CHAR) LEN(20)
+             /* Variables pour le QUSRTVUS                           */
+             DCL        VAR(&STRPOS)    TYPE(*CHAR) LEN(4)
+             DCL        VAR(&STRPOSDEC) TYPE(*DEC)  LEN(4 0)
+             DCL        VAR(&RCVVAR)    TYPE(*CHAR) LEN(16)
+             DCL        VAR(&OBJL0100)  TYPE(*CHAR) LEN(56)
+             /* Userspace utilisé                                    */
+             DCL        VAR(&USNAME)    TYPE(*CHAR) LEN(10) +
+                          VALUE('MEPUSRSPC')
+             DCL        VAR(&USLIB) TYPE(*CHAR) LEN(10) VALUE('QTEMP')
+
+             DCL        VAR(&MSG) TYPE(*CHAR) LEN(512)
+
+             CHGVAR     VAR(&RETOUR) VALUE('0')
+
+             SNDPGMMSG  MSG('*** Recherche de l''allocation de +
+                          l''objet ' *BCAT &OBJ *TCAT ', de la +
+                          bibliothèque' *BCAT &LIB *BCAT 'de type' +
+                          *BCAT &OBJTYPE *BCAT '. ***')
+             IF         COND((&LIB *EQ '*NONE') *OR (&OBJ *EQ +
+                          '*NONE') *OR (&OBJTYPE *EQ '*NONE') *OR +
+                          (&OBJTYPE *EQ ' ')) THEN(GOTO CMDLBL(ENDPGM))
+             CHKOBJ     OBJ(&LIB/&OBJ) OBJTYPE(&OBJTYPE)
+             MONMSG     MSGID(CPF9801) EXEC(GOTO CMDLBL(ENDPGM))
+
+/*********************************************************************/
+/* Constitution des noms longs pour les APIs                         */
+/*********************************************************************/
+             CHGVAR     VAR(%SST(&QUSRSPC 01 10)) VALUE(&USNAME)
+             CHGVAR     VAR(%SST(&QUSRSPC 11 10)) VALUE(&USLIB)
+             CHGVAR     VAR(%SST(&QOBJNAM 01 10)) VALUE(&OBJ)
+             CHGVAR     VAR(%SST(&QOBJNAM 11 10)) VALUE(&LIB)
+             /* Pour être sûr de la cohérence du résultat on          +
+                convertit en Uppercase                               */
+             CHGVAR     VAR(&FLDLEN) VALUE(128)
+             CALL       PGM(QDCXLATE) PARM(&FLDLEN &QUSRSPC +
+                          QSYSTRNTBL QSYS)
+             CALL       PGM(QDCXLATE) PARM(&FLDLEN &QOBJNAM +
+                          QSYSTRNTBL QSYS)
+
+/*********************************************************************/
+/* Création du user space qui recevra le résultat de l'objlck        */
+/*********************************************************************/
+             CHGVAR     VAR(&XTDATT) VALUE(' ')
+             CHGVAR     VAR(%BIN(&INITSIZE)) VALUE(9999)
+             CHGVAR     VAR(&INITVALUE) VALUE(' ')
+             CHGVAR     VAR(&PUBAUTH) VALUE('*LIBCRTAUT')
+             CHGVAR     VAR(&DESC) VALUE(' ')
+             CHGVAR     VAR(&REPLACE) VALUE('*YES')
+
+             CALL       PGM(QUSCRTUS) PARM(&QUSRSPC &XTDATT +
+                          &INITSIZE   &INITVALUE &PUBAUTH &DESC +
+                          &REPLACE &ERREUR)
+
+             CHKOBJ     OBJ(&USLIB/&USNAME) OBJTYPE(*USRSPC)
+
+/*********************************************************************/
+/* QWCLOBJL - Api List Object Locks                                  */
+/*********************************************************************/
+             CHGVAR     VAR(&FORMAT) VALUE('OBJL0100')
+             CHGVAR     VAR(&APIOBJTYP) VALUE(&OBJTYPE)
+
+             CALL       PGM(QWCLOBJL) PARM(&QUSRSPC &FORMAT &QOBJNAM +
+                          &APIOBJTYP &MBR &ERREUR)
+
+/*********************************************************************/
+/* QUSRTVUS - Api Retrieve User Space                                */
+/* Pour récupérer la longueur et de la position de départ (+1 Offset)*/
+/*********************************************************************/
+             CHGVAR     VAR(%BIN(&STRPOS)) VALUE(125)
+             CHGVAR     VAR(%BIN(&SPCSIZ)) VALUE(64)
+
+             CALL       PGM(QUSRTVUS) PARM(&QUSRSPC &STRPOS &SPCSIZ +
+                          &RCVVAR)
+
+             CHGVAR     VAR(&SPCSIZ) VALUE(%SST(&RCVVAR 13 4))
+             CHGVAR     VAR(&STRPOS) VALUE(%SST(&RCVVAR 1 4))
+             CHGVAR     VAR(&SPCSIZDEC) VALUE(%BIN(&SPCSIZ))
+             CHGVAR     VAR(&STRPOSDEC) VALUE(%BIN(&STRPOS))
+             CHGVAR     VAR(&STRPOSDEC) VALUE(&STRPOSDEC +1)
+             CHGVAR     VAR(%BIN(&STRPOS)) VALUE(&STRPOSDEC)
+
+/*********************************************************************/
+/* QUSRTVUS - Api Retrieve User Space                                */
+/* Pour récupérer le job/user/number qui alloue                      */
+/*********************************************************************/
+             CALL       PGM(QUSRTVUS) PARM(&QUSRSPC &STRPOS &SPCSIZ +
+                          &OBJL0100)
+
+             IF         COND(&OBJL0100 *EQ ' ') THEN(DO)
+             SNDPGMMSG  MSG('*** Aucune allocation pour l''objet ' +
+                          *BCAT &OBJ *TCAT ', de la bibliothèque' +
+                          *BCAT &LIB *BCAT 'de type' *BCAT +
+                          &OBJTYPE *BCAT '. ***')
+             GOTO       CMDLBL(FIN)
+             ENDDO
+
+/*********************************************************************/
+/* On analyse la première allocation                                 */
+/*********************************************************************/
+             CHGVAR     VAR(&JOB) VALUE(%SST(&OBJL0100 01 10))
+             CHGVAR     VAR(&USR) VALUE(%SST(&OBJL0100 11 10))
+             CHGVAR     VAR(&NBR) VALUE(%SST(&OBJL0100 21 10))
+             SNDPGMMSG  MSG('*** L''objet ' *BCAT &OBJ *TCAT ', de +
+                          la bibliothèque' *BCAT &LIB *BCAT 'de +
+                          type' *BCAT &OBJTYPE *BCAT 'est alloué +
+                          par le travail' *BCAT &NBR *TCAT '/' +
+                          *TCAT &USR *TCAT '/' *TCAT &JOB *BCAT '. +
+                          ***')
+
+/*********************************************************************/
+/* MAJ du code retour et suppression du Usrspc                       */
+/*********************************************************************/
+             /* Le code retour change d'état                         */
+             CHGVAR     VAR(&RETOUR) VALUE('1')
+
+ FIN:        DLTUSRSPC  USRSPC(&USLIB/&USNAME)
+ ENDPGM:     SNDPGMMSG  MSG('*** Fin de la recherche de +
+                          l''allocation de l''objet ' *BCAT &OBJ +
+                          *TCAT ', de la bibliothèque' *BCAT &LIB +
+                          *BCAT 'de type' *BCAT &OBJTYPE *BCAT '. ***')
+             ENDPGM

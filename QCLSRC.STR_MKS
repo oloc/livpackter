@@ -1,0 +1,16 @@
+/*********************************************************************/
+/* Démarrage des services MKS                                        */
+/* Test de l'automatisation des mises en production                  */
+/*                                                                   */
+/* Olivier Locard - Prolival - 28/04/05                              */
+/*********************************************************************/
+             PGM        PARM(&EXEMOD &CODRET &DATE &APP)
+
+             DCL        VAR(&CODRET) TYPE(*CHAR) LEN(2)
+             DCL        VAR(&DATE) TYPE(*CHAR) LEN(8)
+             DCL        VAR(&EXEMOD) TYPE(*CHAR) LEN(5)
+             DCL        VAR(&APP) TYPE(*CHAR) LEN(3)
+
+             DLYJOB     DLY(1)
+
+             ENDPGM

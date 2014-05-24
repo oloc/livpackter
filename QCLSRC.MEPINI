@@ -1,0 +1,34 @@
+/*********************************************************************/
+/* Programme chapeau de l'initialisation du Livpackter               */
+/*                                                                   */
+/* Programme appelant : MEPINISBM en soumission                      */
+/*                                                                   */
+/* Olivier Locard - Prolival - 09/10/06                              */
+/* OLOC 08/03/07 Nouveau format des historiques                      */
+/* OLOC 10/08/07 Refonte de la gestion de la dtaara MEPINF           */
+/*********************************************************************/
+             PGM
+
+             /*  Récupération des informations et mise à jour de     +
+                 la dtaarea QTEMP/MEPINF                             */
+             CALL       PGM(UPDMEPINF) PARM('INIT')
+
+             /* Remise à blanc des historiques                       */
+             CALL       PGM(INIHST)
+
+             /* Suppression des packages archivés                    */
+             CALL       PGM(INIMEPPKG)
+
+             /* Suppression des packages à livrer                    */
+             CALL       PGM(INIPKG)
+
+             /* Suppression des sauvegardes Emergency                */
+             CALL       PGM(INIEMG)
+
+             /* Suppression des sauvegardes avant livraison          */
+             CALL       PGM(INISAV)
+
+             /* Historisation de la fin de l'initialisation          */
+             CALL       PGM(UPDHST) PARM('INI0200' ' ')
+
+             ENDPGM

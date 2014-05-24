@@ -1,0 +1,30 @@
+/*********************************************************************/
+/* Récupération des informations liées à la mise en production       */
+/* Le tout est mis dans la Data Area MEPINF ainsi "découpée" :       */
+/*                                                                   */
+/* 77 08 La date au format YYYYMMDD                                  */
+/*                                                                   */
+/* Programme appelant : UPDMEPINF                                    */
+/*                                                                   */
+/* Olivier Locard - Prolival - 07/08/07                              */
+/*********************************************************************/
+             PGM
+
+             /* Variables pour la date et l'heure                    */
+             DCL        VAR(&DATE)  TYPE(*CHAR) LEN(8)
+             DCL        VAR(&QDATE) TYPE(*CHAR) LEN(6)
+
+/*********************************************************************/
+/* Récupération de la date                                           */
+/*********************************************************************/
+             RTVSYSVAL  SYSVAL(QDATE) RTNVAR(&QDATE)
+             CVTDAT     DATE(&QDATE) TOVAR(&DATE) FROMFMT(*SYSVAL) +
+                          TOFMT(*YYMD) TOSEP(*NONE)
+
+/*********************************************************************/
+/* Mise à jour des informations                                      */
+/*********************************************************************/
+
+             CHGDTAARA  DTAARA(MEPINF (77 08)) VALUE(&DATE)
+
+ FIN:        ENDPGM

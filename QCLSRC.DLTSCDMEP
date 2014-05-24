@@ -1,0 +1,52 @@
+/*********************************************************************/
+/* Suppression d'une plannificiation.                                */
+/* Ceci est le chapeau du SQLRPG qui procédera sur le SCDMEPPF       */
+/*                                                                   */
+/* Olivier Locard - Prolival - 17/03/05                              */
+/* MOD OLOC 19/04/05 : Retour à l'état initial du Bon de livraison   */
+/* MOD OLOC 07/12/05 : Fusion de l'ensemble des historiques          */
+/* MOD OLOC 07/12/05 : Ajout d'une historisation de la suppression   */
+/* MOD OLOC 28/12/05 : Extraction du code pour créer le BKPDLVPF     */
+/*********************************************************************/
+             PGM        PARM(&BLNAME &MEPDATE)
+
+             DCL        VAR(&APP) TYPE(*CHAR) LEN(3)
+             DCL        VAR(&CRTLIB) TYPE(*CHAR) LEN(10)
+             DCL        VAR(&BLNAME) TYPE(*CHAR) LEN(10)
+             DCL        VAR(&MEPDATE) TYPE(*CHAR) LEN(8)
+             DCL        VAR(&MEPTIME) TYPE(*CHAR) LEN(8) +
+                          VALUE('        ')
+             DCL        VAR(&MEPUSER) TYPE(*CHAR) LEN(10)
+
+             SNDPGMMSG  MSG('*** Package :' *BCAT &BLNAME *BCAT ', +
+                          Date de MEP :' *BCAT &MEPDATE *BCAT '***')
+
+/*********************************************************************/
+/* Récupération du nom de l'utilisateur et du Cex de l'application   */
+/*********************************************************************/
+             RTVJOBA    USER(&MEPUSER)
+             CALL       PGM(RTVAPPVAL) PARM(&BLNAME &APP)
+
+/*********************************************************************/
+/* Remise à blanc de l'enreg dans la table de planification          */
+/*********************************************************************/
+             /* MAJ 07/12/05 Fusion des historiques                  */
+             OVRDBF     FILE(MEPLOGPF) MBR(SCDMEP)
+             CALL       PGM(DLTSCDMEP2) PARM(&BLNAME &MEPDATE &MEPTIME)
+             DLTOVR     FILE(MEPLOGPF)
+             /* Fin de MAJ 07/12/05                                  */
+
+/*********************************************************************/
+/* Remise en état du bon de livraison                                */
+/*********************************************************************/
+             CALL       PGM(BKPDLVPF) PARM(&BLNAME)
+
+/*********************************************************************/
+/* Historisation de la suppression de la planifiaction               */
+/*********************************************************************/
+             OVRDBF     FILE(MEPLOGPF) TOFILE(MEPLOGPF) MBR(DLTSCDLOG)
+             CALL       PGM(UPDLOG) PARM(&BLNAME &MEPDATE &MEPTIME +
+                          &APP &MEPUSER)
+             DLTOVR     FILE(MEPLOGPF)
+
+             ENDPGM

@@ -1,0 +1,54 @@
+/*********************************************************************/
+/* Soumission du ENDDLVPKG                                           */
+/*                                                                   */
+/* Programme appelant : Aucun - Trigger                              */
+/*                                                                   */
+/* Olivier Locard - Prolival - 16/02/07                              */
+/* OLOC 24/07/2007 Suppression de la soumission => passage en CALL   */
+/* OLOC 24/07/2007 retour arrière sur cet amendement                 */
+/*********************************************************************/
+             PGM        PARM(&REQUEST &APP &EMGLIB &JOBDLIB &JOBD)
+
+             /* Variables de paramètres                              */
+             DCL        VAR(&REQUEST) TYPE(*CHAR) LEN(04)
+             DCL        VAR(&APP)     TYPE(*CHAR) LEN(03)
+             DCL        VAR(&EMGLIB)  TYPE(*CHAR) LEN(10)
+             DCL        VAR(&JOBDLIB) TYPE(*CHAR) LEN(10)
+             DCL        VAR(&JOBD)    TYPE(*CHAR) LEN(10)
+             /* Variables kitues                                     */
+             DCL        VAR(&DTAARA)  TYPE(*CHAR) LEN(10)
+             DCL        VAR(&JOB)     TYPE(*CHAR) LEN(10)
+             /* Variables pour le découpage du Receiver              */
+             DCL        VAR(&SBMJOB) TYPE(*CHAR) LEN(10)
+             DCL        VAR(&SBMUSR) TYPE(*CHAR) LEN(10)
+             DCL        VAR(&SBMMSGQ) TYPE(*CHAR) LEN(10)
+             DCL        VAR(&SBMMSGQLIB) TYPE(*CHAR) LEN(10)
+
+             /* Constitution des variables temporaires               */
+             CHGVAR     VAR(&JOB) VALUE('PKG' *TCAT &APP *TCAT +
+                          &REQUEST)
+             CHGVAR     VAR(&DTAARA) VALUE('T$T' *TCAT &APP *TCAT +
+                          &REQUEST)
+
+             /* Si cette Dtaara n'existe pas c'est la première +
+                fois que l'on passe dans le process                  */
+             CHKOBJ     OBJ(QTEMP/&DTAARA) OBJTYPE(*DTAARA)
+             MONMSG     MSGID(CPF9801) EXEC(DO)
+             CRTDTAARA  DTAARA(QTEMP/&DTAARA) TYPE(*CHAR) LEN(100) +
+                          TEXT('Test de primo process')
+
+             /* Récupération des msgqs du soumetteur                 */
+             CALL       PGM(USRJOBI) PARM(&SBMUSR &SBMJOB &SBMMSGQ +
+                          &SBMMSGQLIB)
+
+             SBMJOB     CMD(CALL PGM(ENDDLVPKG) PARM(&REQUEST &APP +
+                          &EMGLIB &SBMJOB)) JOB(&JOB) +
+                          JOBD(&JOBDLIB/&JOBD) INLLIBL(*JOBD) +
+                          MSGQ(&SBMMSGQLIB/&SBMMSGQ)
+
+/* 24/07/07  CALL       PGM(ARCMSGPKG) PARM(&REQUEST &APP &EMGLIB +
+                          &SBMJOB) */
+
+             ENDDO      /* chkobj dtaara */
+
+             ENDPGM

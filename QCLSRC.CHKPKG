@@ -1,0 +1,93 @@
+/*********************************************************************/
+/* Vérification de l'intégrité du package.                           */
+/*                                                                   */
+/* Programme appelant : DSPPKGL2                                     */
+/*                                                                   */
+/* Olivier Locard - Prolival - 24/07/07                              */
+/*********************************************************************/
+             PGM        PARM(&BLNAME)
+
+             DCL        VAR(&BLNAME)     TYPE(*CHAR) LEN(10)
+             DCL        VAR(&MSGDTA)     TYPE(*CHAR) LEN(100) +
+                        VALUE(' ')
+             DCL        VAR(&MSGID)      TYPE(*CHAR) LEN(7)
+             DCL        VAR(&MSGF)       TYPE(*CHAR) LEN(10)
+             DCL        VAR(&MSGFLIB)    TYPE(*CHAR) LEN(10)
+             DCL        VAR(&NBRCURRCD)  TYPE(*DEC) LEN(10 0)
+             /* Variables pour les MSGQS du WRNOBJCOD                */
+             DCL        VAR(&SBMJOB)     TYPE(*CHAR) LEN(10)
+             DCL        VAR(&SBMUSR)     TYPE(*CHAR) LEN(10)
+             DCL        VAR(&SBMMSGQ)    TYPE(*CHAR) LEN(10)
+             DCL        VAR(&SBMMSGQLIB) TYPE(*CHAR) LEN(10)
+
+             /********************************************************/
+             /* On charge les informations dans la DTAARA MEPINF     */
+             /********************************************************/
+             CALL       PGM(UPDMEPINF) PARM(&BLNAME)
+
+             /********************************************************/
+             /* Avant tout vérification qu'un BL ait été sélectionné */
+             /********************************************************/
+             IF         COND(&BLNAME *EQ ' ') THEN(DO)
+             SNDPGMMSG  MSGID(CHK1001) MSGF(MEPMSGF) MSGTYPE(*ESCAPE)
+             ENDDO
+
+             /********************************************************/
+             /* Vérification que le BL existe bien                   */
+             /********************************************************/
+             CHKOBJ     OBJ(&BLNAME) OBJTYPE(*FILE)
+             MONMSG     MSGID(CPF9800) EXEC(DO)
+             RCVMSG     MSGTYPE(*LAST) MSGDTA(&MSGDTA) MSGID(&MSGID) +
+                        MSGF(&MSGF) MSGFLIB(&MSGFLIB)
+             SNDPGMMSG  MSGID(&MSGID) MSGF(&MSGFLIB/&MSGF) +
+                        MSGDTA(&MSGDTA) MSGTYPE(*ESCAPE)
+             ENDDO      /* CPF9800 */
+
+             /********************************************************/
+             /* Vérification que le Bon de Livraison n'est pas vide  */
+             /********************************************************/
+             RTVMBRD    FILE(&BLNAME) NBRCURRCD(&NBRCURRCD)
+             IF         COND(&NBRCURRCD *EQ 0) THEN(DO)
+             SNDPGMMSG  MSGID(CHK1002) MSGF(MEPMSGF) MSGDTA(&BLNAME) +
+                        MSGTYPE(*ESCAPE)
+             ENDDO
+
+             /********************************************************/
+             /* Vérification du bon paramétrage des CO               */
+             /********************************************************/
+             CALL       PGM(CHKOBJCOD) PARM(&BLNAME)
+             MONMSG     MSGID(MEP1050) EXEC(DO)
+             /* Envoi des différents messages                        */
+             CALL       PGM(WRNOBJCOD)
+             SNDPGMMSG  MSGID(CHK1050) MSGF(MEPMSGF) MSGDTA(&BLNAME) +
+                        MSGTYPE(*ESCAPE)
+             ENDDO      /* &msgdta = ERREUR */
+
+             /********************************************************/
+             /* Vérification de la présence des objets sur le quai   */
+             /********************************************************/
+             CALL       PGM(CHKPKGOBJ) PARM(&BLNAME)
+             RCVMSG     MSGTYPE(*LAST) MSGDTA(&MSGDTA) MSGID(&MSGID) +
+                        MSGF(&MSGF)
+             IF         COND(&MSGID *NE 'CHK0105') THEN(DO)
+             SNDPGMMSG  MSGID(&MSGID) MSGF(&MSGF) MSGDTA(&MSGDTA) +
+                        MSGTYPE(*ESCAPE)
+             ENDDO
+
+             /********************************************************/
+             /* Vérification de la cohérence des dates BL & Objets   */
+             /********************************************************/
+             CALL       PGM(CHKPKGDAT) PARM(&BLNAME)
+             RCVMSG     MSGTYPE(*LAST) MSGDTA(&MSGDTA) MSGID(&MSGID) +
+                        MSGF(&MSGF)
+             IF         COND(&MSGID *NE 'CHK0110') THEN(DO)
+             SNDPGMMSG  MSGID(&MSGID) MSGF(&MSGF) MSGDTA(&MSGDTA) +
+                        MSGTYPE(*ESCAPE)
+             ENDDO
+
+             /********************************************************/
+             /* Après tous ces tests on considère qu'il est valide   */
+             /********************************************************/
+             SNDPGMMSG  MSGID(CHK0100) MSGF(MEPMSGF) MSGDTA(&BLNAME)
+
+             ENDPGM

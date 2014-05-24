@@ -1,0 +1,72 @@
+/*********************************************************************/
+/* Avertissement de non paramétrage de code objet présent dans le    */
+/* bon de livraison, au sein de la table des codes objets OBJCODTBL  */
+/*                                                                   */
+/* Olivier Locard - Prolival - 07/10/05                              */
+/* MOD OLOC 13/10/05 Modification du MEPPKGPF                        */
+/* MOD OLOC 14/11/06 Refonte totale pour lecture du CODANOPF         */
+/* MOD OLOC 22/02/07 Insertion de la prépa de BL en intéractif       */
+/* MOD OLOC 03/08/07 Pour éviter les PB de *LIBL, mise en place du   */
+/* fichier de travail CODANOWF au lieu du master CODANOPF            */
+/*********************************************************************/
+             PGM
+
+             DCL        VAR(&MSG)        TYPE(*CHAR) LEN(256)
+             DCL        VAR(&CEX)        TYPE(*CHAR) LEN(3)
+             /* Variables pour le découpage du Receiver              */
+             DCL        VAR(&JOBTYPE)    TYPE(*CHAR) LEN(1)
+             DCL        VAR(&SBMJOB)     TYPE(*CHAR) LEN(10)
+             DCL        VAR(&SBMUSR)     TYPE(*CHAR) LEN(10)
+             DCL        VAR(&SBMMSGQ)    TYPE(*CHAR) LEN(10)
+             DCL        VAR(&SBMMSGQLIB) TYPE(*CHAR) LEN(10)
+             /* Variables SAR : Sert à Rien                          */
+             DCL        VAR(&SAR6)       TYPE(*CHAR) LEN(6)
+             DCL        VAR(&SAR8)       TYPE(*CHAR) LEN(8)
+             DCL        VAR(&SAR10)      TYPE(*CHAR) LEN(10)
+
+             /* Le fichier référant                                  */
+             DCLF       FILE(CODANOPF)
+             OVRDBF     FILE(CODANOPF) TOFILE(CODANOWF)
+
+/*********************************************************************/
+/* Récupération des informations sur le job                          */
+/*********************************************************************/
+             RTVMEPINF  BLNAME(&SAR10) JOB(&SAR10) USER(&SAR10) +
+                          NBR(&SAR6) TYPE(&JOBTYPE) SBMJOB(&SBMJOB) +
+                          SBMUSR(&SBMUSR) SBMMSGQ(&SBMMSGQ) +
+                          SBMMSGQLIB(&SBMMSGQLIB) CEX(&CEX) +
+                          DATE(&SAR8) TIME(&SAR8)
+
+/*********************************************************************/
+/* Lecture en boucle du fichier constitué                            */
+/*********************************************************************/
+ BOUCLE:     RCVF
+             MONMSG     MSGID(CPF0864) EXEC(GOTO CMDLBL(FIN))
+
+             CHGVAR     VAR(&MSG) VALUE('*** ATTENTION le code +
+                          objet' *BCAT &AOBJCOD *BCAT 'n''est pas +
+                          paramétré dans la Table des codes objets +
+                          Livpackter pour l''environnement' *BCAT +
+                          &AENVNAM *TCAT '. Aucune livraison ne +
+                          peut être effectuée. Veuillez contacter +
+                          l''administrateur.')
+             SNDPGMMSG  MSGID(CPF9898) MSGF(QCPFMSG) MSGDTA('*** +
+                          Environnement :' *BCAT &AENVNAM *TCAT ', +
+                          Object Code :' *BCAT &AOBJCOD *BCAT '***')
+             IF         COND(&JOBTYPE *EQ 'I') THEN(DO)
+             SNDBRKMSG  MSG(&MSG) TOMSGQ(&SBMJOB)
+             MONMSG     MSGID(CPF2469)
+             ENDDO
+             SNDMSG     MSG(&MSG) TOUSR(&SBMUSR)
+             SNDPGMMSG  MSG(&MSG)
+
+/*********************************************************************/
+/* On boucle afin de lire tout le fichier constitué                  */
+/*********************************************************************/
+             GOTO       CMDLBL(BOUCLE)
+
+/*********************************************************************/
+/* Fin de programme                                                  */
+/*********************************************************************/
+ FIN:        DLTOVR     FILE(CODANOPF)
+             ENDPGM

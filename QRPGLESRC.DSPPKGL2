@@ -1,0 +1,169 @@
+     F* Olivier Locard - 04/03/05
+     F* MAJ 11/03/05 ajout de IN99
+     F* MAJ 04/05/05 ajout de IN80 pour gérer les retours sans sélection
+     F* MAJ 17/01/06 ajout de la visualisation par Tools
+     F* MAJ 08/08/07 Epuration de l'option et du CRTTMPPKG2
+     F*
+     F* Override du QDSPPKGL sur MEPPKGPF2
+     F*
+     F* Programme appelant : MEPMNU
+     F*
+     F* Les indicateurs :
+     F* 03 F03 Exit
+     F* 12 F12 Exit
+     F* 95 Rollup
+     F*
+     F* 71 SFLCLR
+     F* 72 SFLDSP
+     F* 73 SFLDSPCTL
+     F* 80 option 1 de sélection
+     F* 91 SFLEND
+     F* 92 EOF End Of File
+     F* 95 Erreur dans un call
+     F* 99 Rien à lister
+     F*****************************************************************
+     F*
+     FPKGLSTPF  IF   E           K DISK    RENAME(PKGLST:PKGR)
+     FDSPPKGL   CF   E             WORKSTN SFILE(SUBFILE:RECNUM)
+     DRECNUM           S              4  0 inz
+     DFILE             S             10    inz
+     D                SDS
+     DPGMQ                     1     10
+     DERRPGM             *status
+     DTYPERR                  40     42
+     DCPFERR                  43     46
+     DTXTERR                  91    170
+     C     *ENTRY        PLIST
+     C                   PARM                    BLNAME           10
+     C     *LIKE         DEFINE    RECNUM        I
+     C**** Initialisation
+     C                   Z-ADD     *ZERO         RECNUM
+     C*                  Activation des SFLDSP et SFLDSPCTL
+     C                   SETON                                          7273
+     C                   SETOFF                                       7180
+     C                   SETOFF                                       919293
+     C                   SETOFF                                           99
+     C*****************************************************************
+     C* MAINLINE                                                      *
+     C*****************************************************************
+     C                   WRITE     HEAD
+     C                   WRITE     FOOT
+     C                   WRITE     CTLMSG
+     C**** On boucle tant que l'on appuie pas sur F03 ou F12
+     C     AFFICH        TAG
+     C     *IN03         CABEQ     '1'           FIN
+     C     *IN12         CABEQ     '1'           FIN
+     C                   EXSR      SFLPRC
+     C  N99              EXSR      SFLRD
+     C  N99              GOTO      AFFICH
+     C*
+     C     FIN           TAG
+     C  N80              CLEAR                   BLNAME
+     C   99              MOVEL     'ERROR'       BLNAME
+     C                   SETON                                        LR
+     C*****************************************************************
+     C* SUBROUTINE - SFLPRC                                           *
+     C* PROCESS SUBFILE AND DISPLAY                                   *
+     C*****************************************************************
+     C     SFLPRC        BEGSR
+     C   93              GOTO      SAMEPAG
+     C     NEXTPAG       TAG
+     C                   EXSR      SFLCLR
+     C                   EXSR      SFLFIL
+     C     SAMEPAG       TAG
+     C*                  Activation des SFLDSP et SFLDSPCTL
+     C                   SETON                                          7273
+     C                   WRITE     FOOT
+     C                   WRITE     HEAD
+     C                   WRITE     CTLMSG
+     C                   EXFMT     CTLFILE                              99
+     C*
+     C                   EXSR      CLRSFLMSG
+     C*
+     C   99              SETON                                        LR
+     C*                  En cas de Rollup on teste la fin de fichier
+     C  N95              GOTO      SFLPRCFIN
+     C  N92              GOTO      NEXTPAG
+     C   92              GOTO      SAMEPAG
+     C     SFLPRCFIN     TAG
+     C                   ENDSR
+     C*****************************************************************
+     C* SUBROUTINE - SFLCLR                                           *
+     C* CLEAR SUBFILE RECORDS                                         *
+     C*****************************************************************
+     C     SFLCLR        BEGSR
+     C*                  Mise à zéro du EOF (End Of File)
+     C                   MOVE      '0'           *IN91
+     C*                  Mise à zéro des SFLDSP et SFLDSPCTL
+     C                   MOVE      '0'           *IN72
+     C                   MOVE      '0'           *IN73
+     C*                  Activation du SFLCLR ie du clear
+     C                   MOVE      '1'           *IN71
+     C                   WRITE     CTLFILE
+     C*                  Désactivation du SFLCLR ie du clear
+     C                   MOVE      '0'           *IN71
+     C*                  Initialisation du compteur de lignes
+     C                   Z-ADD     *ZERO         RECNUM
+     C                   ENDSR
+     C*****************************************************************
+     C* Nettoyage du sous-fichier de message
+     C*****************************************************************
+     C     CLRSFLMSG     BEGSR
+     C                   SETOFF                                         7273
+     C                   SETON                                        71
+     C                   WRITE     CTLMSG
+     C                   SETOFF                                       71
+     C                   CALL      'CLRPGMQ'
+     C                   ENDSR
+     C*****************************************************************
+     C* SUBROUTINE - SFLFIL                                           *
+     C* FILL SUBFILE                                                  *
+     C*****************************************************************
+     C     SFLFIL        BEGSR
+     C*    Initialisation du EOF
+     C                   MOVE      '0'           *IN92
+     C*    Tant qu'on a pas rempli le sous-fichier on boucle
+     C     *IN92         DOWEQ     '0'
+     C                   READ      PKGR                                   92
+     C   92              MOVE      '1'           *IN91
+     C                   ADD       1             RECNUM
+     C  N92              WRITE     SUBFILE
+     C                   ENDDO
+     C                   ENDSR
+     C*****************************************************************
+     C* SUBROUTINE - SFLRD                                            *
+     C* Traitement et lecture de sous-fichier                         *
+     C*****************************************************************
+     C     SFLRD         BEGSR
+     C                   Z-ADD     *ZERO         I
+     C                   SETOFF                                       93
+     C     *IN93         DOUEQ     '1'
+     C                   ADD       1             I
+     C                   READC     SUBFILE                                93
+     C*    Si a cette lecture EOF, on va à la fin
+     C     *IN93         CABEQ     '1'           FRDSFL
+     C*
+     C                   SELECT
+     C     OPT           WHENEQ    '1'
+     C                   SETON                                            80
+     C                   GOTO      FIN
+     C* Option 5=Détails
+     C     OPT           WHENEQ    '5'
+     C                   CALL(E)   'DSPPKG'
+     C                   PARM                    BLNAME
+     C* Option 6=Chronologie
+     C     OPT           WHENEQ    '6'
+     C                   CALL(E)   'DSPCHRP'
+     C                   PARM                    BLNAME
+     C* Option 7=Check
+     C     OPT           WHENEQ    '7'
+     C                   CALL(E)   'CHKPKG'
+     C                   PARM                    BLNAME
+     C*
+     C                   ENDSL
+     C*
+     C                   MOVE      ' '           OPT
+     C                   UPDATE    SUBFILE
+     C                   ENDDO
+     C     FRDSFL        TAG
+     C                   ENDSR

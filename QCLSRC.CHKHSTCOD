@@ -1,0 +1,36 @@
+/*********************************************************************/
+/* Historisation des codes objets absents de la table OBJCODTBL      */
+/* Ce qui empêche la mise en production                              */
+/* On boucle sur le fichier des codes objets absents CODANOPF        */
+/*                                                                   */
+/* Programme appelant : CHKOBJCOD                                    */
+/*                                                                   */
+/* Olivier Locard - Prolival 14/11/06                                */
+/* OLOC 09/03/07 Nouveau format des historiques                      */
+/* OLOC 03/08/07 Pour éviter les PB de *LIBL, mise en place d'un     */
+/* fichier de travail CODANOWF au lieu du master CODANOPF            */
+/*********************************************************************/
+             PGM        PARM(&BLNAME)
+
+             DCL        VAR(&BLNAME) TYPE(*CHAR) LEN(10)
+             DCL        VAR(&MSGDTA) TYPE(*CHAR) LEN(132)
+             DCL        VAR(&MSGID) TYPE(*CHAR) LEN(7)
+
+             DCLF       FILE(CODANOPF)
+
+             OVRDBF     FILE(CODANOPF) TOFILE(CODANOWF)
+ BOUCLE:     RCVF
+             MONMSG     MSGID(CPF0864) EXEC(GOTO CMDLBL(FINBOUCLE))
+
+             /* Constitution des fields data                         */
+             CHGVAR     VAR(&MSGID) VALUE('MEP1052')
+             CHGVAR     VAR(&MSGDTA) VALUE(' ')
+             CHGVAR     VAR(%SST(&MSGDTA 1 10)) VALUE(&AENVNAM)
+             CHGVAR     VAR(%SST(&MSGDTA 11 7)) VALUE(&AOBJCOD)
+
+             /* Historisation des allocations                        */
+             CALL       PGM(UPDHST) PARM(&MSGID &MSGDTA)
+             GOTO       CMDLBL(BOUCLE)
+
+ FINBOUCLE:  DLTOVR     FILE(CODANOPF)
+             ENDPGM

@@ -1,0 +1,12 @@
+/*********************************************************************/
+/* Programme de soumission de l'initialisation du Livpackter         */
+/*                                                                   */
+/* Olivier Locard - Prolival - 09/10/06                              */
+/*********************************************************************/
+             PGM
+
+             SBMJOB     CMD(CALL PGM(MEPINI)) JOB(MEPINI) +
+                          JOBD(PPPJD) USER(*CURRENT) PRTTXT(*JOBD) +
+                          CURLIB(*CRTDFT) INLLIBL(*JOBD)
+
+             ENDPGM

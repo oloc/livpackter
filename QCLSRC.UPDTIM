@@ -1,0 +1,15 @@
+/*********************************************************************/
+/* Mise à jour de la partie "heure" de la dataarea d'info. MEPINF    */
+/*                                                                   */
+/* Programmes appelants : EMGMEP                                     */
+/*                                                                   */
+/* Olivier Locard - Prolival - 05/03/07                              */
+/*********************************************************************/
+             PGM
+
+             DCL        VAR(&QTIME) TYPE(*CHAR) LEN(8)
+
+             RTVSYSVAL  SYSVAL(QTIME) RTNVAR(&QTIME)
+             CHGDTAARA  DTAARA(MEPINF (85 08)) VALUE(&QTIME)
+
+             ENDPGM

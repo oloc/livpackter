@@ -1,0 +1,30 @@
+/*********************************************************************/
+/* Commande de suppression d'un objet quelque soit son type.         */
+/*                                                                   */
+/* Programme éponyme                                                 */
+/*                                                                   */
+/* Olivier Locard - Prolival - 13/03/07                              */
+/*********************************************************************/
+             CMD        PROMPT('Delete Object')
+             PARM       KWD(OBJLIB) TYPE(OBJLIB) MIN(1) +
+                          PROMPT('Object')
+             PARM       KWD(OBJTYPE) TYPE(*CHAR) LEN(10) RSTD(*YES) +
+                          DFT(*ALL) VALUES(*ALL *ALRTBL *BNDDIR +
+                          *CHTFMT *CLD *CLS *CMD *CRG *CRQD *CSI +
+                          *CSPMAP *CSPTBL *DTAARA *DTAQ *EDTD +
+                          *EXITRG *FCT *FILE *FNTRSC *FNTTBL +
+                          *FORMDF *FTR *GSS *IGCDCT *IGCSRT *IGCTBL +
+                          *IMGCLG *JOBD *JOBQ *JOBSCD *JRN *JRNRCV +
+                          *LOCALE *MEDDFN *MENU *MGTCOL *MODULE +
+                          *MSGF *MSGQ *NODGRP *NODL *ORTBL *OUTQ +
+                          *OVL *PAGDFN *PAGSEG *PDFMAP *PDG *PGM +
+                          *PNLGRP *PRDAVL *PRTIMG *PSFCFG *QMFORM +
+                          *QMQRY *QRYDFN *RCT *SBSD *SCHIDX *SPADCT +
+                          *SQLPKG *SQLUDT *SRVPGM *SSND *SVRSTG +
+                          *S36 *TBL *USRIDX *TIMZON *USRQ *USRSPC +
+                          *VLDL *WSCST) PROMPT('Object Type')
+ OBJLIB:     QUAL       TYPE(*GENERIC) SPCVAL((*ALL)) MIN(1) +
+                          CHOICE(*VALUES)
+             QUAL       TYPE(*GENERIC) LEN(10) DFT(*LIBL) +
+                          SPCVAL((*LIBL) (*CURLIB)) MIN(0) +
+                          CHOICE(*VALUES) PROMPT('Library')

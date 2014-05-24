@@ -1,0 +1,46 @@
+/*********************************************************************/
+/* Programme pour faciliter le lancement de Test Unitaire            */
+/*                                                                   */
+/* Olivier Locard - Prolival - 15/11/06                              */
+/*********************************************************************/
+             PGM        PARM(&BLNAME)
+
+             DCL        VAR(&BLNAME) TYPE(*CHAR) LEN(10)
+             DCL        VAR(&B_NAME) TYPE(*CHAR) LEN(10)
+
+             /* mise de côté du BL de test                          */
+             CHGVAR     VAR(&B_NAME) VALUE('BKP' *TCAT %SST(&BLNAME +
+                          4 7))
+             CRTDUPOBJ  OBJ(&BLNAME) FROMLIB(*LIBL) OBJTYPE(*FILE) +
+                          NEWOBJ(&B_NAME) DATA(*YES)
+             MONMSG     MSGID(CPF2130)
+
+             /* Suppression des *SAVF des éventuels précédents tests */
+             CHGVAR     VAR(&B_NAME) VALUE('SAV' *TCAT %SST(&BLNAME +
+                          4 7))
+             DLTF       FILE(&B_NAME)
+             MONMSG     MSGID(CPF2105)
+             CHGVAR     VAR(&B_NAME) VALUE('EMG' *TCAT %SST(&BLNAME +
+                          4 7))
+             DLTF       FILE(&B_NAME)
+             MONMSG     MSGID(CPF2105)
+
+             /* Suppression des archivages du BL                     */
+             RMVM       FILE(MEPPKGPF) MBR(&BLNAME)
+             MONMSG     MSGID(CPF5815 CPF7310)
+             RMVM       FILE(MEPPKGPFA) MBR(&BLNAME)
+             MONMSG     MSGID(CPF5815 CPF7310)
+
+             /* Changement de la Jobd pour prendre en compte l'UAT   */
+             CHGJOBD    JOBD(PPPJD) INLLIBL(QTEMP HFRPPPUTLU +
+                          HFRPPPUTL QGPL) LOG(4 0 *SECLVL) +
+                          LOGCLPGM(*YES)
+
+             /* Lancement en Sbm de la livraison                     */
+             CALL       PGM(EMGMEPSBM) PARM(&BLNAME)
+
+             /* Remise en état de la Jobd                            */
+             CHGJOBD    JOBD(PPPJD) INLLIBL(QTEMP HFRPPPUTL QGPL) +
+                          LOG(4 0 *NOLIST) LOGCLPGM(*NO)
+
+             ENDPGM

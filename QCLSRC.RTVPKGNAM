@@ -1,0 +1,62 @@
+/*********************************************************************/
+/* Programme qui, à partir d'une table renvoi le trigramme associé   */
+/* à un système dans le cadre des mises en production.               */
+/*                                                                   */
+/* Olivier Locard - 01/03/05                                         */
+/*********************************************************************/
+             PGM        PARM(&SYSNAM &REQUEST &NAME)
+
+             DCL        VAR(&DATE) TYPE(*CHAR) LEN(3)
+             DCL        VAR(&DATEJUL) TYPE(*CHAR) LEN(6)
+             DCL        VAR(&NAME) TYPE(*CHAR) LEN(10)
+             DCL        VAR(&REQUEST) TYPE(*CHAR) LEN(10)
+             DCL        VAR(&SYSDAT) TYPE(*CHAR) LEN(06)
+             DCL        VAR(&SYSNAM) TYPE(*CHAR) LEN(10)
+             DCL        VAR(&SYSTEM) TYPE(*CHAR) LEN(3) VALUE('ANO')
+             /* Le trigramme système est initialisé à 'Anomalie'     */
+
+             DCLF       FILE(MEPSYSTBL)
+
+/*********************************************************************/
+/* Boucle de lecture de la table à la recherche du système           */
+/*********************************************************************/
+
+             SNDPGMMSG  MSG('*** Système cherché :' *BCAT &SYSNAM +
+                          *BCAT '***')
+
+             /* Récupération des 3 lettres caractérisant le système  */
+ BOUCLE:     RCVF
+             MONMSG     MSGID(CPF0864) EXEC(GOTO CMDLBL(DATE))
+
+             /* Pour le debug                                       +
+             SNDPGMMSG  MSG('*** Système lu :' *BCAT &SYSNAME *BCAT +
+                          ', Système cherché :' *BCAT &SYSNAM *BCAT +
+                          '***')                                    +
+             */
+
+             /* Si on trouve le nom du système dans la table         */
+             IF         COND(&SYSNAME *EQ &SYSNAM) THEN(DO)
+             CHGVAR     VAR(&SYSTEM) VALUE(&SYSTRI)
+             GOTO       CMDLBL(DATE)
+             ENDDO
+
+             GOTO       CMDLBL(BOUCLE)
+
+             /* Récupération des 3 chiffres de date julienne         */
+ DATE:       RTVSYSVAL  SYSVAL(QDATE) RTNVAR(&SYSDAT)
+             CVTDAT     DATE(&SYSDAT) TOVAR(&DATEJUL) +
+                          FROMFMT(*SYSVAL) TOFMT(*JUL)
+             CHGVAR     VAR(&DATE) VALUE(%SST(&DATEJUL 4 3))
+
+             /* Pour le debug +
+             SNDPGMMSG  MSG('*** Système :' *BCAT &SYSTEM *BCAT ', +
+                          date julienne :' *BCAT &DATE *BCAT ', +
+                          Numéro de requete :' *BCAT &REQUEST *BCAT +
+                          '***') +
+             */
+
+             /* Constitution du nom a partir de la concaténation :   */
+ NOM:        CHGVAR     VAR(&NAME) VALUE(&SYSTEM *TCAT &DATE *TCAT +
+                          &REQUEST)
+
+ FIN:        ENDPGM

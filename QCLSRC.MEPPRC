@@ -1,0 +1,67 @@
+/*********************************************************************/
+/* Processus principal des MEP. Il est découpé en ( étapes :         */
+/* 1_ MOVOBJ des composants de Prod dans la *LIB Tampon              */
+/* 2_ SAVLIB de cette tampon dans un *SAVF pour des retours arrières */
+/* 3_ DUPOBJ des nouveaux composants en production                   */
+/* 4_ MOVOBJ des composants de l'EMG dans la *LIB Tampon             */
+/* 5_ SAVLIB de cette tampon dans un *SAVF pour des retours arrières */
+/*                                                                   */
+/* Programme appelant : EMGMEPSBM - en soumission                    */
+/*                                                                   */
+/* Olivier Locard - Prolival - 04/03/05                              */
+/* MOD OLOC 21/04/05 Passage du trigramme de savf en paramètre       */
+/* MOD OLOC 22/04/05 Prise en compte de l'Emergency                  */
+/* MOD OLOC 19/10/05 Prise en compte des LF par DSPDBR               */
+/* MOD OLOC 29/11/05 Mise en place de la procédure MEPMOVSAV         */
+/* MOD OLOC 26/12/05 Mise en place de l'historique des BL            */
+/* MOD OLOC 29/05/06 Mise en place de la détection des allocations   */
+/* MOD OLOC 30/10/06 Remplacement du MEPDUPOBJ par le MEPMOVOBJ      */
+/* MOD OLOC 02/03/07 Ajout du test de SAVF et son archivage          */
+/* MOD OLOC 08/03/07 Fusion avec le EMGMEP (supprimé)                */
+/* MOD OLOC 10/08/07 Suppression du MEPLOGPF et Gestion par MEPINF   */
+/*********************************************************************/
+             PGM   PARM(&BLNAME)
+
+             DCL        VAR(&BLNAME) TYPE(*CHAR) LEN(10)
+             DCL        VAR(&MSGDTA) TYPE(*CHAR) LEN(132) VALUE(' ')
+             DCL        VAR(&MSGLCK) TYPE(*CHAR) LEN(10)  VALUE(' ')
+
+             /*  Récupération des informations et mise à jour de     +
+                 la dtaarea QTEMP/MEPINF                             */
+             CALL       PGM(UPDMEPINF) PARM(&BLNAME)
+
+             /* Historisation du début de l'opération       12/07/06 */
+             CHGVAR     VAR(&MSGDTA) VALUE(&BLNAME)
+             CALL       PGM(UPDHST) PARM('MEP0100' &MSGDTA)
+
+             /* Détection des allocations qui entraine l'arrêt       */
+             CALL       PGM(CHKPKGLCK) PARM('MEP')
+             RCVMSG     MSGTYPE(*LAST) MSGDTA(&MSGLCK)
+             SNDPGMMSG  MSG(&MSGLCK)
+             IF         COND(&MSGLCK *EQ 'ALLOCATION') THEN(DO)
+             RETURN
+             ENDDO
+
+             /* Ajout des LF qui n'y sont pas par rapport aux PF     */
+             CALL       PGM(MEPDSPDBR)
+             /* Test de présence des SAVF et archivage               */
+             CALL       PGM(MEPCHKSAVF) PARM(&BLNAME)
+             /* Déplacement des objets de prod => tampon et save     */
+             CALL       PGM(MEPMOVSAV) PARM(&BLNAME 'SAV')
+             /* Duplication des objets du quai de liv. => Prod       */
+/* 30/10/06  CALL       PGM(MEPDUPOBJ) PARM(&BLNAME)                 */
+             CALL       PGM(MEPMOVOBJ) PARM(&BLNAME)
+             /* Déplacement des objets de Emergency => Tampon et save*/
+             CALL       PGM(MEPMOVSAV) PARM(&BLNAME 'EMG')
+             /* Modification des descriptions d'objets               */
+             CALL       PGM(MEPLICOBJD)
+             /* Historique du bon de livraison                       */
+             OVRDBF     FILE(MEPPKGPF) TOFILE(*FILE) MBR(&BLNAME)
+             CALL       PGM(UPDPKGLOG) PARM(&BLNAME)
+             DLTOVR     FILE(MEPPKGPF)
+
+             /* Historisation de la fin de l'opération      12/07/06 */
+             CHGVAR     VAR(&MSGDTA) VALUE(&BLNAME)
+             CALL       PGM(UPDHST) PARM('MEP0200' &MSGDTA)
+
+ ENDPGM:     ENDPGM

@@ -1,0 +1,47 @@
+/*********************************************************************/
+/* Programme qui retourne le nombre de records d'un membre d'un PF   */
+/* Un retour a 999999999 indique que le membre n'a pas été trouvé    */
+/*                                                                   */
+/* Olivier Locard - Prolival - 27/10/05                              */
+/*********************************************************************/
+             PGM        PARM(&LIB &FILE &MBR &RCD)
+
+             DCL        VAR(&FILE) TYPE(*CHAR) LEN(10)
+             DCL        VAR(&LIB)  TYPE(*CHAR) LEN(10)
+             DCL        VAR(&MBR)  TYPE(*CHAR) LEN(10)
+             DCL        VAR(&RCDMSG) TYPE(*CHAR) LEN(10)
+             DCL        VAR(&RCD)  TYPE(*DEC)  LEN(10 0)
+
+             DCLF       FILE(QAFDMBR)
+
+             /* Init à cette valeur qui sert de code retour          */
+             CHGVAR     VAR(&MBNRCD) VALUE(9999999999)
+
+/*********************************************************************/
+/* Création d'un fichier suite a un DSPFD                            */
+/*********************************************************************/
+             DLTF       FILE(QTEMP/QPAFDMBR)
+             MONMSG     MSGID(CPF2105)
+
+             DSPFD      FILE(&LIB/&FILE) TYPE(*MBR) OUTPUT(*OUTFILE) +
+                          OUTFILE(QTEMP/QPAFDMBR)
+             OVRDBF     FILE(QAFDMBR) TOFILE(QPAFDMBR)
+
+/*********************************************************************/
+/* Lecture du fichier généré jusqu'à touver le membre                */
+/*********************************************************************/
+ BOUCLE:     RCVF
+             MONMSG     MSGID(CPF0864)
+
+             IF         COND(&MBNAME *EQ &MBR) THEN(GOTO +
+                          CMDLBL(FINBOUCLE))
+
+             GOTO       CMDLBL(BOUCLE)
+
+ FINBOUCLE:  CHGVAR     VAR(&RCD) VALUE(&MBNRCD)
+             CHGVAR     VAR(&RCDMSG) VALUE(&RCD)
+             SNDPGMMSG  MSG('*** Membre :' *BCAT &MBR *BCAT 'du +
+                          fichier' *BCAT &FILE *BCAT 'de la +
+                          bibliothèque' *BCAT &LIB *BCAT 'contient' +
+                          *BCAT &RCDMSG *BCAT 'enregistrements. ***')
+             ENDPGM

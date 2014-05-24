@@ -1,0 +1,5 @@
+     A          R MEPHST
+     A                                      PFILE(MEPHSTPF)
+     A          K MEPDATE                   DESCEND
+     A          K MEPTIME                   DESCEND
+     A          S MSGID                     COMP(EQ 'DLT0200')

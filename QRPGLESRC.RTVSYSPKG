@@ -1,0 +1,72 @@
+      * On recherche tous les systèmes ayant un quai dans la requete
+      * Ce crible s'appuit sur l'historique Implementer des requetes :
+      * IMRQEN
+      * et sur un fichier outils référençant tous les environnements de quai
+      * ENVQUAITBL
+      * Une fois trouvé on avertit le requester de ses numéros de packages
+      *
+      * Olivier Locard - Prolival - 10/11/06
+      **********************************************************************
+     FSYSLIVPF  O    E             DISK
+      **********************************************************************
+      * Déclaration de variables                                           *
+      **********************************************************************
+     DPKGNAM           S             10    INZ(*BLANKS)
+     DRTNCOD           S              4    INZ(*BLANKS)
+      *YSNAM           S             10    INZ(*BLANKS)
+     C     *ENTRY        PLIST
+     C                   PARM                    RQSNBR            4
+      *
+      * 50 : Indicateur pour récupérer que le premier code retour SQL
+     C                   SETON                                        50
+      *
+      **********************************************************************
+      * Préparation de l'utilisation du SQL                                *
+      **********************************************************************
+     C/EXEC SQL
+     C+ INCLUDE SQLCA
+     C/END-EXEC
+      *
+      *****************************************************************
+      * Déclaration de curseur pour la Requête                        *
+      *****************************************************************
+     C/EXEC SQL
+     C+ Declare C1 cursor for
+     C+ select IMRQEN.RESYNM, ENVNAM
+     C+ from IMRQEN inner join ENVQUAITBL
+     C+ on ENVNAM = REENNM
+     C+ where RERQNO = :RQSNBR
+     C/END-EXEC
+      *
+      *****************************************************************
+      * Ouverture du curseur                                          *
+      *****************************************************************
+     C/EXEC SQL
+     C+ OPEN C1
+     C/END-EXEC
+      *
+      *****************************************************************
+      * Fetch du curseur afin de récupérer le User ID                 *
+      *****************************************************************
+     C     BOUCLE        TAG
+     C/EXEC SQL
+     C+ FETCH NEXT FROM C1 INTO :SYSNAM, :ENVNAM
+     C/END-EXEC
+      *
+     C   50              MOVE      SQLCOD        RTNCOD
+     C*  50RTNCOD        DSPLY     /Pour le debug
+      *
+     C     SQLCOD        CABNE     0             SUITE
+     C                   SETOFF                                       50
+     C                   WRITE     SYSLIV
+     C                   GOTO      BOUCLE
+     C*****************************************************************
+     C* Fermeture du curseur et du fichier                            *
+     C*****************************************************************
+     C     SUITE         TAG
+     C/EXEC SQL
+     C+ CLOSE C1
+     C/END-EXEC
+     C*
+     C                   CLOSE     SYSLIVPF
+     C                   SETON                                            LR

@@ -1,0 +1,61 @@
+     A*%%TS  SD  20050304  142438  HFRADMOL01  REL-V5R2M0  5722-WDS
+     A*%%EC
+     A                                      DSPSIZ(24 80 *DS3)
+     A                                      REF(*LIBL/MEPPKGPF)
+     A                                      INDARA
+     A                                      CA03(03 'END OF JOB')
+     A                                      CA12(12 'END OF JOB')
+     A* Head Format
+     A          R HEAD
+     A*%%TS  SD  20050304  142438  HFRADMOL01  REL-V5R2M0  5722-WDS
+     A                                      TEXT('En-tête de page')
+     A                                      OVERLAY
+     A            BLNAME        10A  O  2  2COLOR(BLU)
+     A                                  1 28'Visualisation d''un package'
+     A                                      DSPATR(HI)
+     A                                      COLOR(WHT)
+     A                                  1 70SYSNAME
+     A                                  2 70TIME
+     A* Foot Format
+     A          R FOOT
+     A*%%TS  SD  20050222  135226  HFRADMOL01  REL-V5R2M0  5722-WDS
+     A                                      TEXT('Pied de page')
+     A                                 23  2'F3=Exit F12=Cancel'
+     A                                      COLOR(BLU)
+     A* Subfile Record Format
+     A          R SUBFILE                   SFL
+     A*%%TS  SD  20050304  123820  HFRADMOL01  REL-V5R2M0  5722-WDS
+     A                                      TEXT('Subfile Record')
+     A            DETMBR    R        O  7 05
+     A            DETTYP    R        O  7 16
+     A            DETTPE    R        O  7 24
+     A            DETATR    R        O  7 33
+     A            DETLIB    R        O  7 44
+     A            DETFIL    R        O  7 55
+     A            DETSRL    R        O  7 66
+     A* Subfile Control-Recored Format
+     A          R CTLFILE                   SFLCTL(SUBFILE)
+     A*%%TS  SD  20050304  123820  HFRADMOL01  REL-V5R2M0  5722-WDS
+     A                                      SFLSIZ(0014)
+     A                                      SFLPAG(0013)
+     A                                      TEXT('Subfile Control-Record')
+     A  71                                  SFLCLR
+     A  72                                  SFLDSP
+     A  73                                  SFLDSPCTL
+     A  91                                  SFLEND
+     A N91                                  ROLLUP(95 'Suite ...')
+     A                                      OVERLAY
+     A                                  5 05'Objet    :'
+     A                                      COLOR(WHT)
+     A                                  5 16'Code  :'
+     A                                      COLOR(WHT)
+     A                                  5 24'Type   :'
+     A                                      COLOR(WHT)
+     A                                  5 33'Attribut :'
+     A                                      COLOR(WHT)
+     A                                  5 44'Bib Obj. :'
+     A                                      COLOR(WHT)
+     A                                  5 55'Source   :'
+     A                                      COLOR(WHT)
+     A                                  5 66'Bib Src. :'
+     A                                      COLOR(WHT)

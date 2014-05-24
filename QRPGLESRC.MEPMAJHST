@@ -1,0 +1,44 @@
+      * Ajout de l'application et de l'utilisateur pour chaque enreg dans
+      * MEPHSTPF
+      * Ce programme est du ONE SHOT sur toutes les machines
+      *
+      * Programme appelant : MEPMAJP
+      * Programme appelé   :
+      *
+      * Hervé Esposito - ALTIQUE -   22/03/07
+      *
+      *****************************************************************
+      * Permet d'eviter de deboger les specif I et O
+     HOPTION(*NODEBUGIO: *SRCSTMT)
+      *
+     FMEPLOGPF  IF A E           K DISK
+     FMEPHSTL0  UF   E           K DISK
+      *
+     IMEPHST
+     I              BLNAME                      BLHST
+     I              MEPDATE                     DATEHST
+     I              MEPTIME                     TIMEHST
+     I              APP                         APPHST
+     I              MEPUSER                     USERHST
+      *
+     C     CLEBL         KLIST
+     C                   KFLD                    BLNAME
+      *
+     C                   READ      MEPLOGPF                               60
+     C     *IN60         DOWEQ     *OFF
+     C     CLEBL         CHAIN     MEPHSTL0                           70
+     C     *IN70         DOWEQ     *OFF
+     C     USERHST       IFEQ      *BLANKS
+     C     APPHST        ANDEQ     *BLANKS
+     C                   MOVEL     MEPUSER       USERHST
+     C                   MOVEL     APP           APPHST
+     C                   UPDATE    MEPHST
+     C                   ENDIF
+     C     CLEBL         READE     MEPHSTL0                               70
+     C                   ENDDO
+     C     *LOVAL        SETLL     MEPHSTL0
+     C                   READ      MEPLOGPF                               60
+     C                   ENDDO
+      *
+     C                   SETON                                        LR
+      *

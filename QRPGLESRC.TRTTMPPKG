@@ -1,0 +1,52 @@
+     H**********************************************************************
+     H* Suppression des éléments distribués sur la machine de développement
+     H* du bon de livraison temporaire (TMPPKGPF)
+     H* Ce fichier est en Override du MEPPKGPF - fichier de référence en
+     H* matière de bon de livraison.
+     H* Pour trouver si le champ SYSNAME est une machine locale ou distante
+     H* on se réfère au fichier Implementer MWIPF400
+     H*
+     H* Olivier Locard - Prolival - 04/10/05
+     H* MOD OLOC 16/05/06 : On ne crible plus sur le système *LOC mais par
+     H* la table ENVQUAITBL des environnements qui sont des quais
+     H**********************************************************************
+     D w1_RtnCode      s              1p 0
+
+     Dw1_Stmt          s          10000a
+
+     D  SQLCodeA       s             10a
+
+     Dw1_OK            C                   Const(0)
+     Dw1_KO            C                   Const(9)
+
+      /Free
+
+        Clear w1_Stmt;
+        w1_RtnCode = *zero;
+
+       //OLOC 16/05/06
+       //w1_Stmt = 'delete FROM TMPPKGPF WHERE SYSNAME in ( +
+       //          select SYSNAM from MWIPF400 WHERE CMNRMTNID = ''*LOC'')';
+       //
+        w1_Stmt = 'delete FROM TMPPKGPF WHERE DETTRG  not in ( +
+                   select ENVNAM from ENVQUAITBL)';
+
+      /End-Free
+
+     C/Exec SQL
+     C+  execute immediate :w1_Stmt
+     C/End-Exec
+
+      /Free
+
+        If SQLCOD <> 0;
+          SQLCodeA = 'SQL' +
+             %Subst(%EditW(%Abs(SQLCOD) : '0         ') : 7);
+          w1_RtnCode = w1_KO;
+          DsPly SQLCodeA;
+        Else;
+          w1_RtnCode = w1_OK;
+        EndIf;
+
+      /End-Free
+     C                   SETON                                            LR

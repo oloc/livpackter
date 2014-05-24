@@ -1,0 +1,42 @@
+/*********************************************************************/
+/* Programme qui attend que la *LIB temporaire d'Implementer soit    */
+/* détruite pour procéder au process de fin de livraison.            */
+/*                                                                   */
+/* Programme appelant : ENDDLVSBM                                    */
+/*                                                                   */
+/* Olivier Locard - Prolival - 16/02/07                              */
+/*********************************************************************/
+             PGM        PARM(&REQUEST &APP &EMGLIB &ECRAN)
+
+             /* Variables de paramètres                              */
+             DCL        VAR(&REQUEST)  TYPE(*CHAR) LEN(4)
+             DCL        VAR(&APP)      TYPE(*CHAR) LEN(3)
+             DCL        VAR(&EMGLIB)   TYPE(*CHAR) LEN(10)
+             DCL        VAR(&ECRAN)    TYPE(*CHAR) LEN(10)
+
+             DCL        VAR(&COMPTEUR) TYPE(*DEC) LEN(10 0) VALUE(0)
+             DCL        VAR(&IMLIB)    TYPE(*CHAR) LEN(10)
+
+             CHGVAR     VAR(&IMLIB) VALUE('IM' *TCAT &REQUEST)
+
+/*********************************************************************/
+/* Boucle de test de présence de la *LIB tempo d'Implementer         */
+/*********************************************************************/
+ CHKIMLIB:   CHKOBJ     OBJ(&IMLIB) OBJTYPE(*LIB)
+             MONMSG     MSGID(CPF9800) EXEC(GOTO CMDLBL(ARCMSGPKG))
+             DLYJOB     DLY(5)
+             CHGVAR     VAR(&COMPTEUR) VALUE(&COMPTEUR +1)
+             /* Test si cela fait 5 minutes que l'on boucle          */
+             IF         COND(&COMPTEUR *GE 60) THEN(DO)
+             RETURN
+             ENDDO
+
+             GOTO       CMDLBL(CHKIMLIB) /* boucle de test IMLIB */
+
+/*********************************************************************/
+/* Procédure d'archivage et d'envoi de message                       */
+/*********************************************************************/
+ ARCMSGPKG:  CALL       PGM(ARCMSGPKG) PARM(&REQUEST &APP &EMGLIB +
+                          &ECRAN)
+
+             ENDPGM

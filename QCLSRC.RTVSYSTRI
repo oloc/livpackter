@@ -1,0 +1,28 @@
+/*********************************************************************/
+/* Programme qui récupère le trigramme associé au système local      */
+/*                                                                   */
+/* Programme appelant : DSPPKGL                                      */
+/*                                                                   */
+/* Olivier Locard - Prolival - 09/08/07                              */
+/*********************************************************************/
+             PGM        PARM(&SYSTRI)
+
+             DCL        VAR(&NOMSYS) TYPE(*CHAR) LEN(10)
+
+             DCLF       FILE(MEPSYSTBL)
+
+/*********************************************************************/
+/* Recherche du nom du système puis dans la table le trigramme       */
+/*********************************************************************/
+             RTVNETA    SYSNAME(&NOMSYS)
+
+ BOUCLE:     RCVF
+             MONMSG     MSGID(CPF0864) EXEC(GOTO CMDLBL(PASSYSNAME))
+
+             IF         COND(&SYSNAME *EQ &NOMSYS) THEN(RETURN)
+
+             GOTO       CMDLBL(BOUCLE)
+
+ PASSYSNAME: SNDPGMMSG  MSGID(MEP1001) MSGF(MEPMSGF) MSGDTA(&NOMSYS) +
+                        MSGTYPE(*ESCAPE)
+             ENDPGM

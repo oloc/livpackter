@@ -1,0 +1,243 @@
+      * Affichage des historiques
+      *
+      * Olivier Locard - Prolival - 15/03/07
+      *
+      * Les indicateurs :
+      * 03 F03 Exit
+      * 12 F12 Exit
+      * 95 RollUp
+      * 96 RollDown
+      *
+      * 70 SFLCLR / N70 SFLDSP & SFLDSPCTL
+      * 90 Format NORCD à la place du CTLFILE
+      * 91 SFLEND & EOF End of file
+      * 92 BOF Begin of file
+      * 93 EOS End of Subfile
+      * 99 Indicateur d'erreur
+      * NBRRCD = SFLPAG du dspf
+      * CPT : Compteur de position dans le fichier
+      *****************************************************************
+      *
+      * Permet d'eviter de deboger les specif I et O
+     HOPTION(*NODEBUGIO: *SRCSTMT)
+      *
+     FDSPTBL    IF   E           K DISK
+     FMEPHSTL1  IF   E           K DISK    RENAME(MEPHST:MEPHST1R)
+     FMEPHSTL4  IF   E           K DISK    RENAME(MEPHST:MEPHST4R)
+     FMEPHSTL6  IF   E           K DISK    RENAME(MEPHST:MEPHST6R)
+     FMEPHSTL7  IF   E           K DISK    RENAME(MEPHST:MEPHST7R)
+     FMEPHSTL8  IF   E           K DISK    RENAME(MEPHST:MEPHST8R)
+     FDSPHST    CF   E             WORKSTN SFILE(SUBFILE:RECNUM)
+     DBLNAME           S             10
+     DFILE             S             10    INZ(*BLANKS)
+     DNBRRCD           S              4  0 INZ(15)
+     C     *ENTRY        PLIST
+     C                   PARM                    CHOIX
+      * Clefs de la table de Display
+     C     CLEDSP        KLIST
+     C                   KFLD                    MENU
+     C                   KFLD                    CHOIX
+     C     *LIKE         DEFINE    OPTION        CHOIX
+      * Clefs pour garder le premier et dernier enreg lu
+     C     CLELOW        KLIST
+     C                   KFLD                    DATELOW
+     C                   KFLD                    TIMELOW
+     C     CLEHIG        KLIST
+     C                   KFLD                    DATEHIG
+     C                   KFLD                    TIMEHIG
+     C     *LIKE         DEFINE    MEPDATE       DATELOW
+     C     *LIKE         DEFINE    MEPTIME       TIMELOW
+     C     *LIKE         DEFINE    MEPDATE       DATEHIG
+     C     *LIKE         DEFINE    MEPTIME       TIMEHIG
+      *
+      *****************************************************************
+      * Affectation du titre en fonction du choix de l'historique     *
+      *****************************************************************
+     C                   MOVEL     'HISTO'       MENU
+     C     CLEDSP        CHAIN     DSPTBL                             99
+      *
+     C                   SELECT
+     C     CHOIX         WHENEQ    '01'
+     C                   SETON                                        51
+     C     CHOIX         WHENEQ    '04'
+     C                   SETON                                        54
+     C     CHOIX         WHENEQ    '06'
+     C                   SETON                                        56
+     C     CHOIX         WHENEQ    '07'
+     C                   SETON                                        57
+     C     CHOIX         WHENEQ    '08'
+     C                   SETON                                        58
+     C                   OTHER
+     C                   RETURN
+     C                   ENDSL
+      *
+      *****************************************************************
+      * Tout premier affichage                                        *
+      *****************************************************************
+     C                   EXSR      SFLCLR
+     C                   EXSR      FILDWN
+      *    Au début, on met l'indicateur de début de fichier à 1
+     C                   SETON                                          92
+      *                  WRITE     HEAD
+      *                  WRITE     FOOT
+      *                  WRITE     CTLFILE                              99
+      *  99              RETURN
+      *****************************************************************
+      * Après on boucle tant que l'on appuie pas sur F03 ou F12       *
+      *****************************************************************
+     C     *IN03         DOWEQ     *OFF
+     C     *IN12         ANDEQ     *OFF
+      *
+      *    On charge en fonction des page up/down
+     C                   SELECT
+      *    Page down et pas EOF
+     C     *IN95         WHENEQ    *ON
+     C     *IN91         ANDEQ     *OFF
+     C                   EXSR      SFLCLR
+     C   51CLEHIG        CHAIN     MEPHSTL1                           91
+     C   54CLEHIG        CHAIN     MEPHSTL4                           91
+     C   56CLEHIG        CHAIN     MEPHSTL6                           91
+     C   57CLEHIG        CHAIN     MEPHSTL7                           91
+     C   58CLEHIG        CHAIN     MEPHSTL8                           91
+     C                   EXSR      FILDWN
+      *    Page up et pas BOF
+     C     *IN96         WHENEQ    *ON
+     C     *IN92         ANDEQ     *OFF
+     C                   EXSR      SFLCLR
+     C   51CLELOW        SETLL     MEPHSTL1
+     C   54CLELOW        SETLL     MEPHSTL4
+     C   56CLELOW        SETLL     MEPHSTL6
+     C   57CLELOW        SETLL     MEPHSTL7
+     C   58CLELOW        SETLL     MEPHSTL8
+     C                   EXSR      FILUP
+     C                   ENDSL
+      *    Affichage du résultat
+      *                  Activation des SFLDSP et SFLDSPCTL
+     C                   SETOFF                                       70
+     C                   WRITE     HEAD
+     C                   WRITE     FOOT
+     C   90              EXFMT     NORCD
+     C  N90              EXFMT     CTLFILE
+      *
+      *    On ne traite que s'il n'y a pas de pagination
+     C     *IN95         IFEQ      *OFF
+     C     *IN96         ANDEQ     *OFF
+     C  N90              EXSR      SFLRD
+     C                   ENDIF
+      *
+     C                   ENDDO
+      *
+     C     FIN           TAG
+     C                   SETON                                        LR
+     C*****************************************************************
+     C* SUBROUTINE - SFLCLR                                           *
+     C* CLEAR SUBFILE RECORDS                                         *
+     C*****************************************************************
+     C     SFLCLR        BEGSR
+      *    Clear du sous-fichier
+     C                   SETON                                        70
+     C                   WRITE     CTLFILE
+     C                   SETOFF                                       70
+      *    Initialisation du compteur de lignes
+     C                   Z-ADD     1             RECNUM
+     C                   ENDSR
+     C*****************************************************************
+     C* SUBROUTINE - FILDWN                                           *
+     C* Remplissage du sous-fichier lorsqu'on descend le fichier      *
+     C*****************************************************************
+     C     FILDWN        BEGSR
+      *    Mise à zéro du EOF (End Of File)
+     C                   SETOFF                                       91
+     C                   SETON                                        1090
+      *    Tant qu'on a pas rempli le sous-fichier on boucle
+     C     RECNUM        DOWLE     NBRRCD
+     C   51              READ      MEPHSTL1                               91
+     C   54              READ      MEPHSTL4                               91
+     C   56              READ      MEPHSTL6                               91
+     C   57              READ      MEPHSTL7                               91
+     C   58              READ      MEPHSTL8                               91
+     C   91              LEAVE
+      *    On ne sauvegarde que le premier record
+     C     *IN10         IFEQ      *ON
+     C                   MOVEL     MEPDATE       DATELOW
+     C                   MOVEL     MEPTIME       TIMELOW
+     C                   SETOFF                                       1090
+     C                   ENDIF
+     C                   WRITE     SUBFILE
+     C                   SETOFF                                         92
+     C                   ADD       1             RECNUM
+     C                   ENDDO
+      *    On sauvegarde le dernier record
+     C                   MOVEL     MEPDATE       DATEHIG
+     C                   MOVEL     MEPTIME       TIMEHIG
+     C                   Z-ADD     1             RECNUM
+     C                   ENDSR
+     C*****************************************************************
+     C* SUBROUTINE - FILUP                                            *
+     C* Remplissage du sous-fichier lorsqu'on remonte le fichier      *
+     C*****************************************************************
+     C     FILUP         BEGSR
+      *    Mise à zéro du BOF (Begin of File)
+     C                   SETOFF                                         92
+     C                   SETON                                        10
+      *    Initialisation du compteur
+     C                   Z-ADD     NBRRCD        RECNUM
+      *    Tant qu'on a pas rempli le sous-fichier on boucle
+     C     RECNUM        DOWGE     1
+     C   51              READP     MEPHSTL1                               92
+     C   54              READP     MEPHSTL4                               92
+     C   56              READP     MEPHSTL6                               92
+     C   57              READP     MEPHSTL7                               92
+     C   58              READP     MEPHSTL8                               92
+     C   92              LEAVE
+      *    On ne sauvegarde que le dernier record (doncle premier lu)
+     C     *IN10         IFEQ      *ON
+     C                   MOVEL     MEPDATE       DATEHIG
+     C                   MOVEL     MEPTIME       TIMEHIG
+     C                   SETOFF                                       10
+     C                   ENDIF
+     C                   WRITE     SUBFILE
+     C                   SETOFF                                         91
+     C                   SUB       1             RECNUM
+     C                   ENDDO
+      *    On sauvegarde le premier record (qui est le dernier lu)
+     C                   MOVEL     MEPDATE       DATELOW
+     C                   MOVEL     MEPTIME       TIMELOW
+     C                   Z-ADD     1             RECNUM
+      *    Une dernière lecture pour savoir si début de fichier
+     C   51              READP     MEPHSTL1                               92
+     C   54              READP     MEPHSTL4                               92
+     C   56              READP     MEPHSTL6                               92
+     C   57              READP     MEPHSTL7                               92
+     C   58              READP     MEPHSTL8                               92
+     C                   ENDSR
+     C*****************************************************************
+     C* SUBROUTINE - SFLRD                                            *
+     C* Traitement et lecture de sous-fichier                         *
+     C*****************************************************************
+     C     SFLRD         BEGSR
+     C                   SETOFF                                       93
+     C     *IN93         DOUEQ     *ON
+     C                   READC     SUBFILE                                93
+      *    Si on n'est pas à la EOS on gère les options de sélection
+     C     *IN93         IFEQ      *OFF
+      *    Sélection sur les options
+     C                   SELECT
+     C     OPT           WHENEQ    '1'
+     C                   CALL      'UPDPKGINF'
+     C                   PARM                    BLNAME
+     C                   GOTO      FIN
+     C     OPT           WHENEQ    '5'
+     C                   CALL      'DSPPKG'
+     C                   PARM                    BLNAME
+     C     OPT           WHENEQ    '6'
+     C                   CALL      'DSPCHRP'
+     C                   PARM                    BLNAME
+      *
+     C                   ENDSL
+      *
+     C                   MOVE      *BLANKS       OPT
+     C                   UPDATE    SUBFILE
+     C                   ENDIF
+     C                   ENDDO
+     C                   ENDSR

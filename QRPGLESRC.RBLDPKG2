@@ -1,0 +1,58 @@
+     H**********************************************************************
+     H* Programme de reconstitution de bon de livraison
+     H*
+     H* Olivier Locard - Prolival - 24/10/2006
+     H**********************************************************************
+     FMWIPF110  IP   E             DISK
+     D*
+     C*
+     C     *ENTRY        PLIST
+     C                   PARM                    REQUETE           4
+     C                   PARM                    ENVNAM           10
+     C                   PARM                    CEX               3
+     C                   PARM                    EMG              10
+     C*
+     C*****************************************************************
+     C* Déclaration de curseur pour la Requête                        *
+     C*****************************************************************
+     C/EXEC SQL
+     C+ Declare C1 cursor for
+     C+ SELECT DMWINO, DETMBR, DETTYP
+     C+ FROM mwipf110 WHERE DMWINO = :REQUETE and DETTRG = :ENVNAM
+     C/END-EXEC
+     C*
+     C*****************************************************************
+     C* Ouverture du curseur                                          *
+     C*****************************************************************
+     C/EXEC SQL
+     C+ Open C1
+     C/END-EXEC
+     C*
+     C*****************************************************************
+     C* Fetch du curseur afin de récupérer les éléments               *
+     C*****************************************************************
+     C     BOUCLE        TAG
+     C/EXEC SQL
+     C+ FETCH NEXT FROM C1 INTO :DMWINO, :DETMBR, :DETTYP
+     C/END-EXEC
+     C*
+     C     SQLCOD        CABNE     0             SUITE
+     C                   CALL      'BLDOBJPKG'
+     C                   PARM                    DMWINO
+     C                   PARM                    DETMBR
+     C                   PARM                    DETTYP
+     C                   PARM                    ENVNAM
+     C                   PARM                    CEX
+     C                   PARM                    EMG
+     C                   GOTO      BOUCLE
+     C*
+     C     SUITE         TAG
+     C*****************************************************************
+     C* Fermeture du curseur et du fichier                            *
+     C*****************************************************************
+     C/EXEC SQL
+     C+ CLOSE C1
+     C/END-EXEC
+     C*
+     C                   CLOSE     MWIPF110
+     C                   SETON                                            LR

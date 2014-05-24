@@ -1,0 +1,94 @@
+     F* Olivier Locard - 04/03/05
+     F* MAJ : 17/03/05 Prise en compte du F12
+     F* MAJ : 12/10/05 Fusion du PKGHSTPF dans le MEPPKGPF
+     F* MOD : OLOC 13/10/05 Modification du MEPPKGPF
+     F*
+     F* Les indicateurs :
+     F* 03 F03 Exit
+     F* 12 F12 Exit
+     F* 95 Rollup
+     F*
+     F* 71 SFLCLR
+     F* 72 SFLDSP
+     F* 73 SFLDSPCTL
+     F* 91 SFLEND
+     F* 92 EOF End Of File
+     F*****************************************************************
+     F*
+     FMEPPKGPF  IF   E           K DISK
+     FDSPPKG    CF   E             WORKSTN SFILE(SUBFILE:RECNUM)
+     DRECNUM           S              4  0 inz
+     C     *ENTRY        PLIST
+     C                   PARM                    BLNAME           10
+     C*    Initialisation
+     C                   Z-ADD     *ZERO         RECNUM
+     C*                  Activation des SFLDSP et SFLDSPCTL
+     C                   MOVE      '1'           *IN72
+     C                   MOVE      '1'           *IN73
+     C*****************************************************************
+     C* MAINLINE                                                      *
+     C*****************************************************************
+     C                   WRITE     FOOT
+     C                   WRITE     HEAD
+     C*    On boucle tant que l'on appuie pas sur F03 ou F12
+     C     BOUCLE        TAG
+     C     *IN03         CABEQ     '1'           FIN
+     C     *IN12         CABEQ     '1'           FIN
+     C                   EXSR      SFLPRC
+     C                   GOTO      BOUCLE
+     C*
+     C     FIN           TAG
+     C                   SETON                                        LR
+     C*****************************************************************
+     C* SUBROUTINE - SFLPRC                                           *
+     C* PROCESS SUBFILE AND DISPLAY                                   *
+     C*****************************************************************
+     C     SFLPRC        BEGSR
+     C   92              GOTO      SAMEPAG
+     C     NEXTPAG       TAG
+     C                   EXSR      SFLCLR
+     C                   EXSR      SFLFIL
+     C     SAMEPAG       TAG
+     C*                  Activation des SFLDSP et SFLDSPCTL
+     C                   MOVE      '1'           *IN72
+     C                   MOVE      '1'           *IN73
+     C                   EXFMT     CTLFILE
+     C*                  En cas de Rollup on teste la fin de fichier
+     C  N95              GOTO      SFLPRCFIN
+     C  N92              GOTO      NEXTPAG
+     C   92              GOTO      SAMEPAG
+     C     SFLPRCFIN     TAG
+     C                   ENDSR
+     C*****************************************************************
+     C* SUBROUTINE - SFLCLR                                           *
+     C* CLEAR SUBFILE RECORDS                                         *
+     C*****************************************************************
+     C     SFLCLR        BEGSR
+     C*                  Mise à zéro du EOF (End Of File)
+     C                   MOVE      '0'           *IN91
+     C*                  Mise à zéro des SFLDSP et SFLDSPCTL
+     C                   MOVE      '0'           *IN72
+     C                   MOVE      '0'           *IN73
+     C*                  Activation du SFLCLR ie du clear
+     C                   MOVE      '1'           *IN71
+     C                   WRITE     CTLFILE
+     C*                  Désactivation du SFLCLR ie du clear
+     C                   MOVE      '0'           *IN71
+     C*                  Initialisation du compteur de lignes
+     C                   Z-ADD     *ZERO         RECNUM
+     C                   ENDSR
+     C*****************************************************************
+     C* SUBROUTINE - SFLFIL                                           *
+     C* FILL SUBFILE                                                  *
+     C*****************************************************************
+     C     SFLFIL        BEGSR
+     C*    Initialisation du EOF
+     C                   MOVE      '0'           *IN92
+     C*    Tant qu'on a pas rempli le sous-fichier on boucle
+     C     *IN92         DOWEQ     '0'
+     C                   READ      MEPPKG                                 92
+     C   92              MOVE      '1'           *IN91
+     C                   ADD       1             RECNUM
+     C  N92              WRITE     SUBFILE
+     C                   ENDDO
+     C                   ENDSR

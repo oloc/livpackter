@@ -1,0 +1,41 @@
+/*********************************************************************/
+/* Initialisation des historiques du Livpackter                      */
+/* Fichiers mis à blanc :                                            */
+/* MEPHSTPF                                                          */
+/* MEPLOGPF                                                          */
+/* MEPPKGPF2                                                         */
+/* PKGLOGPF                                                          */
+/*                                                                   */
+/* Programme appelant : MEPINI                                       */
+/*                                                                   */
+/* Olivier Locard - Prolival - 09/10/06                              */
+/* OLOC 08/03/07 Nouveau format d'historiques                        */
+/* OLOC 09/08/07 Suppression du MEPLOGPF                             */
+/*********************************************************************/
+             PGM
+
+             /* Mise à blanc du fichier des historiques détaillées   */
+             SNDPGMMSG  MSG('Mise à blanc du fichier des historiques +
+                          détaillées')
+             CLRPFM     FILE(MEPHSTPF) MBR(*ALL)
+
+             /* On historise l'ensemble de cette initialisation      */
+             CALL       PGM(UPDHST) PARM('INI0100' ' ')
+             CALL       PGM(UPDHST) PARM('INI0110' 'MEPHSTPF')
+             CALL       PGM(UPDHST) PARM('INI0210' 'MEPHSTPF')
+
+             /* Mise à blanc du fichier des historiques et planif'   */
+/* 09/08/07  SNDPGMMSG  MSG('Mise à blanc du fichier des historiques +
+                          et des planifications')                    */
+/*           CALL       PGM(UPDHST) PARM('INI0110' 'MEPLOGPF')       */
+/*           CLRPFM     FILE(MEPLOGPF) MBR(*ALL)                     */
+/*           CALL       PGM(UPDHST) PARM('INI0210' 'MEPLOGPF')       */
+
+             /* Mise à blanc du fichier des historiques de packages  */
+             SNDPGMMSG  MSG('Mise à blanc du fichier des historiques +
+                          de packages')
+             CALL       PGM(UPDHST) PARM('INI0110' 'PKGLOGPF')
+             CLRPFM     FILE(PKGLOGPF) MBR(*ALL)
+             CALL       PGM(UPDHST) PARM('INI0210' 'PKGLOGPF')
+
+             ENDPGM

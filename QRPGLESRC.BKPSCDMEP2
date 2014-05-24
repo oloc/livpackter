@@ -1,0 +1,17 @@
+     H**********************************************************************
+     H* Retour à l'état initial du bon de livraison. Entre autre les *LIB
+     H* du quai de livraison.
+     H*
+     H* IN90 : End of file
+     H*
+     H* Olivier Locard - Prolival - 19/04/05
+     H* MOD : OLOC 13/10/05 Modification du MEPPKGPF
+     H**********************************************************************
+     FMEPPKGPF  UF A E           K DISK    RENAME(MEPPKG:MEPPKGR)
+     C*
+     C                   READ      MEPPKGR                                90
+     C                   MOVEL     OBJMEPLIB     DETLIB
+     C                   MOVEL     SRCMEPLIB     DETSRL
+     C  N90              UPDATE    MEPPKGR
+     C*
+     C   90              SETON                                            LR

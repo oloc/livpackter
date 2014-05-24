@@ -1,0 +1,90 @@
+/*********************************************************************/
+/* Retour arrière - les composants restaurés en *LIB tampon sont     */
+/* remis en production.                                              */
+/*                                                                   */
+/* Olivier Locard - Prolival - 04/03/05                              */
+/* MOD : OLOC 13/10/05 MODIFICATION DU MEPPKGPF                      */
+/* MOD : OLOC 29/11/05 Fusion avec la procédure qui gérait l'EMG   + */
+/* En fonction du trigramme, on prend les *LIB d'EMG ou de prod'   + */
+/* Ajout des commentaires pour le pilotage                           */
+/*********************************************************************/
+             PGM        PARM(&BLNAME &TRI)
+
+             DCL        VAR(&BLNAME) TYPE(*CHAR) LEN(10)
+             DCL        VAR(&DATA)   TYPE(*CHAR) LEN(4)
+             DCL        VAR(&TGTLIB) TYPE(*CHAR) LEN(10)
+             DCL        VAR(&TMPLIB) TYPE(*CHAR) LEN(10)
+             DCL        VAR(&TGTSRL) TYPE(*CHAR) LEN(10)
+             DCL        VAR(&TRI)    TYPE(*CHAR) LEN(3)
+
+             DCLF       FILE(MEPPKGPF)
+             OVRDBF     FILE(MEPPKGPF) MBR(&BLNAME)
+
+             RTVDTAARA  DTAARA(MEPPRM (1 10)) RTNVAR(&TMPLIB)
+
+/*********************************************************************/
+/* Message pour faciliter la maintenance, le debug et le pilotage    */
+/*********************************************************************/
+             SNDPGMMSG  MSG('### Début de la duplication des objets +
+                          de' *BCAT &BLNAME *BCAT 'à partir de la +
+                          bibliothèque tampon' *BCAT &TMPLIB *BCAT +
+                          'vers l''exploitation. ###')
+
+/*********************************************************************/
+/* Boucle de lecture du BL afin de déplacer les composants           */
+/*********************************************************************/
+ BOUCLE:     RCVF
+             MONMSG     MSGID(CPF0864) EXEC(GOTO CMDLBL(FIN))
+
+             /* En fonction du Tri on prend les *LIB EMG ou PRD      */
+             IF         COND(&TRI *EQ 'SAV') THEN(DO)
+             CHGVAR     VAR(&TGTLIB) VALUE(&DETLIB)
+             CHGVAR     VAR(&TGTSRL) VALUE(&DETSRL)
+             ENDDO
+             IF         COND(&TRI *EQ 'EMG') THEN(DO)
+             CHGVAR     VAR(&TGTLIB) VALUE(&EMGLIB)
+             CHGVAR     VAR(&TGTSRL) VALUE(&EMGLIB)
+             ENDDO
+             /* Fin de l'ajout du 29/11/05                           */
+
+             /* Déplacement du source de l'objet lu dans le BL       */
+             CALL       PGM(MEPMOVSRC) PARM(&TMPLIB &DETFIL &DETSRC +
+                          &TGTSRL &DETFIL &DETSRC)
+
+             /* Dans le cas d'un code objet sans objet      19/04/05 */
+             IF         COND(&DETTPE *EQ ' ') THEN(GOTO CMDLBL(BOUCLE))
+
+             CHGVAR     VAR(&DATA) VALUE('*NO')
+             IF         COND((&DETTPE *EQ '*FILE') *AND (&DETATR *EQ +
+                          'PF')) THEN(DO)
+             CHGVAR     VAR(&DATA) VALUE('*YES')
+             ENDDO
+
+             /* Vérification de la restauration du composant         */
+             CHKOBJ     OBJ(&TMPLIB/&DETMBR) OBJTYPE(&DETTPE)
+             MONMSG CPF9801 EXEC(DO)
+             SNDPGMMSG  MSG('*** Objet :' *BCAT &DETMBR *BCAT 'de la +
+                          bibliothèque' *BCAT &TMPLIB *BCAT 'de +
+                          type' *BCAT &DETTPE *BCAT 'n''a pas été +
+                          trouvé. ***')
+             GOTO       CMDLBL(BOUCLE)
+             ENDDO
+             /* Mise en production du composant                      */
+             CRTDUPOBJ  OBJ(&DETMBR) FROMLIB(&TMPLIB) +
+                          OBJTYPE(&DETTPE) TOLIB(&TGTLIB) DATA(&DATA)
+
+             /* Changement de propriétaire                           */
+             CHGOBJOWN  OBJ(&TGTLIB/&DETMBR) OBJTYPE(&DETTPE) +
+                          NEWOWN(&DOBOWN)
+
+             GOTO       CMDLBL(BOUCLE)
+
+/*********************************************************************/
+/* Message pour faciliter la maintenance, le debug et le pilotage    */
+/*********************************************************************/
+ FIN:        SNDPGMMSG  MSG('### Fin de la duplication des objets +
+                          de' *BCAT &BLNAME *BCAT 'à partir de la +
+                          bibliothèque tampon' *BCAT &TMPLIB *BCAT +
+                          'vers l''exploitation. ###')
+
+             ENDPGM

@@ -1,0 +1,45 @@
+/*********************************************************************/
+/* Archivage de 100 versions des SAVF d'avant MEP.                   */
+/* Cette procédure intervient dans le cadre d'un retour arrière      */
+/* On ne peut faire que 100 retours arrière sur un package. Au-delà  */
+/* volontairement on ne gère pas.                                    */
+/*                                                                   */
+/* Olivier Locard - Prolival - 13/07/06                              */
+/*********************************************************************/
+             PGM        PARM(&BLNAME &TRI)
+
+             /* Variables-paramètres                                 */
+             DCL        VAR(&BLNAME) TYPE(*CHAR) LEN(10)
+             DCL        VAR(&TRI)    TYPE(*CHAR) LEN(3)
+             /* Variables du programme                               */
+             DCL        VAR(&COMPTEUR) TYPE(*DEC) LEN(2) VALUE(00)
+             DCL        VAR(&NOMBRE)   TYPE(*CHAR) LEN(2)
+             DCL        VAR(&SAVF)     TYPE(*CHAR) LEN(10)
+             DCL        VAR(&SAVFARC)  TYPE(*CHAR) LEN(10)
+
+             CHGVAR     VAR(%SST(&SAVF 1 3)) VALUE(&TRI)
+             CHGVAR     VAR(%SST(&SAVF 4 7)) VALUE(%SST(&BLNAME 4 7))
+             SNDPGMMSG  MSG('*** SAVF à archiver :' *BCAT &SAVF +
+                          *BCAT '***')
+
+ BOUCLE:     CHGVAR     VAR(&NOMBRE) VALUE(&COMPTEUR)
+             CHGVAR     VAR(&SAVFARC) VALUE(&SAVF)
+             CHGVAR     VAR(%SST(&SAVFARC 2 2)) VALUE(&NOMBRE)
+             CHKOBJ     OBJ(&SAVFARC) OBJTYPE(*FILE)
+             MONMSG     MSGID(CPF9801) EXEC(DO)
+             RNMOBJ     OBJ(&SAVF) OBJTYPE(*FILE) NEWOBJ(&SAVFARC)
+             SNDPGMMSG  MSG('*** Rename du *SAVF' *BCAT &SAVF *BCAT +
+                          'en' *BCAT &SAVFARC *TCAT '. ***')
+             GOTO FIN
+             ENDDO
+
+             /* Cas du dépassement de compteur essentiellement pour  */
+             /* éviter les boucles infinies                          */
+             IF         COND(&COMPTEUR *EQ 99) THEN(DO)
+             GOTO       CMDLBL(FIN)
+             ENDDO
+
+             CHGVAR     VAR(&COMPTEUR) VALUE(&COMPTEUR +1)
+             GOTO       CMDLBL(BOUCLE)
+
+ FIN:        ENDPGM

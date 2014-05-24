@@ -1,0 +1,67 @@
+/*********************************************************************/
+/* Automatisation des mises en production.                           */
+/* Boucle sur le fichier contenant toutes les planifications. Si la  */
+/* date planifiée et celle param' sont les mêmes, on procède en trois*/
+/* étapes :                                                          */
+/* 1_ MEPPRC : Processus de mise en production                       */
+/* 2_ CRTSCDDLV : Historisation de la MEP                            */
+/* 3_ DLTSCDMEP2 : Suppression de la planification dans le fichier   */
+/*                                                                   */
+/* Olivier Locard - Prolival - 23/03/05                              */
+/* MOD OLOC 12/12/05 : Fusion des historiques + Ajout d'un histo des */
+/* planifications + DCLF avec OVRDBF sur le MEPLOGPF                 */
+/*********************************************************************/
+             PGM        PARM(&EXEMOD &CODRET &DATE &APPLIC)
+
+             DCL        VAR(&APPLIC) TYPE(*CHAR) LEN(3)
+             DCL        VAR(&CODRET) TYPE(*CHAR) LEN(2)
+             DCL        VAR(&DATE) TYPE(*CHAR) LEN(8)
+             DCL        VAR(&EXEMOD) TYPE(*CHAR) LEN(5)
+             DCL        VAR(&MEPUSER) TYPE(*CHAR) LEN(10)
+             DCL        VAR(&QTIME) TYPE(*CHAR) LEN(8)
+
+             DCLF       FILE(MEPLOGPF)
+
+/*********************************************************************/
+/* Initialisations du traitement                                     */
+/*********************************************************************/
+             /* Création du fichier temporaire                       */
+             DLTF       FILE(QTEMP/SCDTMPPF)
+             MONMSG     MSGID(CPF0000)
+             /* Cpyf avec critère de sélection afin de n'avoir que +
+                la bonne appli' à la bonne date dans le fichier lu   */
+             CPYF       FROMFILE(MEPLOGPF) TOFILE(QTEMP/SCDTMPPF) +
+                          FROMMBR(SCDMEP) CRTFILE(*YES) INCREL((*IF +
+                          MEPDATE *EQ &DATE) (*AND APP *EQ &APPLIC))
+
+             RTVJOBA    USER(&MEPUSER)
+             OVRDBF     FILE(MEPLOGPF) TOFILE(SCDTMPPF)
+
+/*********************************************************************/
+/* Boucle sur le fichier criblé                                      */
+/*********************************************************************/
+ BOUCLE:     RCVF
+             MONMSG     MSGID(CPF0864) EXEC(GOTO CMDLBL(FINBOUCLE))
+
+             /* Mise en production                                   */
+             CALL MEPPRC PARM(&BLNAME)
+             /* Historique de la mise en production                  */
+             RTVSYSVAL  SYSVAL(QTIME) RTNVAR(&QTIME)
+             OVRDBF     FILE(MEPLOGPF) MBR(MEPLOG)
+             CALL       PGM(UPDLOG) PARM(&BLNAME &DATE &QTIME +
+                          &APPLIC &MEPUSER)
+             DLTOVR     FILE(MEPLOGPF)
+             /* Historique de la planification                       */
+             OVRDBF     FILE(MEPLOGPF) MBR(SCDLOG)
+             CALL       PGM(UPDLOG) PARM(&BLNAME &DATE &QTIME +
+                          &APPLIC &MEPUSER)
+             DLTOVR     FILE(MEPLOGPF)
+             /* Suppression de cette planification du fichier        */
+             OVRDBF     FILE(MEPLOGPF) MBR(SCDMEP)
+             CALL       PGM(DLTSCDMEP2) PARM(&BLNAME &DATE &QTIME)
+             DLTOVR     FILE(MEPLOGPF)
+
+             GOTO       CMDLBL(BOUCLE)
+
+ FINBOUCLE:
+             ENDPGM

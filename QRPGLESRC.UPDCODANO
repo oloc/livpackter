@@ -1,0 +1,76 @@
+     H**********************************************************************
+     H* Recherche des objets du bon de livraison sans code objets.
+     H* La table Livpackter des codes objets est OBJCODTBL
+     H* CODANOPF est le fichier que l'on va remplir avec le résultat de
+     H* la requête de recherche des absents.
+     H* MEPPKGPF est le fichier bon de livraison.
+     H*
+     H* Programme appelant : CHKOBJCOD
+     H*
+     H* Olivier Locard - Prolival - 04/10/05
+     H* OLOC 24/07/07 Supp. de l'include SQL qui alloue la table OBJCODTBL
+     H* OLOC 03/08/07 Pour éviter les PB de *LIBL, mise en place d'un
+     H* fichier de travail CODANOWF au lieu du master CODANOPF
+     H**********************************************************************
+     FCODANOPF  O    E           K DISK
+     D**********************************************************************
+     D* Déclaration de variables                                           *
+     D**********************************************************************
+     DDETTRG           S             10A
+     DDETTYP           S              7A
+     C     *ENTRY        PLIST
+     C                   PARM                    TGTENV           10
+     C                   PARM                    OBJCOD            7
+     C                   PARM                    RTNCOD            4
+      *
+      * 50 : Indicateur pour récupérer que le premier code retour SQL
+     C                   SETON                                        50
+      *
+      **********************************************************************
+      * Préparation de l'utilisation du SQL                                *
+      **********************************************************************
+      *EXEC SQL
+      * INCLUDE SQLCA
+      *END-EXEC
+      *
+      *****************************************************************
+      * Déclaration de curseur pour la Requête                        *
+      *****************************************************************
+     C/EXEC SQL
+     C+ Declare C1 cursor for
+     C+ select ENVRIN, EOBJCD
+     C+ from OBJCODTBL
+     C+ where ENVRIN = :TGTENV and EOBJCD = :OBJCOD
+     C/END-EXEC
+     C*
+     C*****************************************************************
+     C* Ouverture du curseur                                          *
+     C*****************************************************************
+     C/EXEC SQL
+     C+ OPEN C1
+     C/END-EXEC
+     C*
+     C*****************************************************************
+     C* Fetch du curseur afin de récupérer le User ID                 *
+     C*****************************************************************
+     C/EXEC SQL
+     C+ FETCH NEXT FROM C1 INTO :TGTENV, :OBJCOD
+     C/END-EXEC
+     C*
+     C   50              MOVE      SQLCOD        RTNCOD
+     C*  50RTNCOD        DSPLY
+     C     SQLCOD        CABEQ     0             SUITE
+     C                   SETOFF                                       50
+     C                   MOVE      TGTENV        AENVNAM
+     C                   MOVE      OBJCOD        AOBJCOD
+     C                   WRITE     CODANO
+     C*****************************************************************
+     C* Fermeture du curseur et du fichier                            *
+     C*****************************************************************
+     C     SUITE         TAG
+     C/EXEC SQL
+     C+ CLOSE C1
+     C/END-EXEC
+     C                   CLOSE     CODANOPF
+     C*
+     C                   SETON                                            LR

@@ -1,0 +1,157 @@
+/*********************************************************************/
+/* Processus de fin de livraison qui consiste à la recréation des    */
+/* bons de livraison distants sur la machine host, de leur archivage */
+/* puis de l'alerte auprès de l'utilisateur du nom de ces BLs.       */
+/*                                                                   */
+/* Programme appelant : ENDDLVPKG                                    */
+/*                                                                   */
+/* Olivier Locard - Prolival - 14/03/05                              */
+/* MOD OLOC 19/04/05 : Prise en compte de l'Emergency                */
+/* MOD OLOC 04/10/05 : Suppression des données de la machine locale  */
+/*                     du bon de livraison temporaire (TRTTMPPKG)    */
+/* MOD : OLOC 13/10/05 Modification du MEPPKGPF                      */
+/* MOD : OLOC 30/11/05 Modification du PKGLOGPF et ajout de l'app    */
+/* MOD : OLOC 06/12/05 Fusion de l'ensemble des historiques          */
+/* MOD : OLOC 16/05/06 Mise au ban du TRTTMPPKG devenu génant avec   */
+/*                     l'installation du quai pour les UAT           */
+/* MOD : OLOC 17/05/06 Modification de l'archivage. On purge si ce   */
+/*                     n'est pas de la machine locale                */
+/* MOD : OLOC 07/11/06 Ajout du Chkobj du tmp                        */
+/* MOD : OLOC 26/13/07 Ajout de l'historique de création             */
+/* MOD : OLOC 03/08/07 Pour éviter les PB de *LIBL, mise en place du */
+/* fichier de travail CODANOWF au lieu du master CODANOPF            */
+/* MOD : OLOC 09/08/07 Suppression de la màj du MEPLOGPF             */
+/*********************************************************************/
+             PGM        PARM(&REQUEST &APP &EMGLIB &ECRAN)
+
+             DCL        VAR(&APP)        TYPE(*CHAR) LEN(3)
+             DCL        VAR(&ECRAN)      TYPE(*CHAR) LEN(10)
+             DCL        VAR(&EMGLIB)     TYPE(*CHAR) LEN(10)
+             DCL        VAR(&MSG)        TYPE(*CHAR) LEN(256)
+             DCL        VAR(&MSGID)      TYPE(*CHAR) LEN(07)
+             DCL        VAR(&MSGDTA)     TYPE(*CHAR) LEN(132)
+             DCL        VAR(&BLNAME)     TYPE(*CHAR) LEN(10)
+             DCL        VAR(&REQUEST)    TYPE(*CHAR) LEN(4)
+             DCL        VAR(&SBMMSGQ)    TYPE(*CHAR) LEN(10)
+             DCL        VAR(&SBMMSGQLIB) TYPE(*CHAR) LEN(10)
+             DCL        VAR(&SYSNAME)    TYPE(*CHAR) LEN(10)
+             DCL        VAR(&TYPJOB)     TYPE(*CHAR) LEN(1)
+             DCL        VAR(&USER)       TYPE(*CHAR) LEN(10)
+             DCL        VAR(&SAR6)       TYPE(*CHAR) LEN(06)
+             DCL        VAR(&SAR8)       TYPE(*CHAR) LEN(08)
+             DCL        VAR(&SAR10)      TYPE(*CHAR) LEN(10)
+
+             DCLF       FILE(SYSLIVPF)
+
+             /* Mise à jour de la dtaara MEPINF                      */
+             CALL       PGM(UPDMEPINF) PARM(' ')
+
+/*********************************************************************/
+/* Constitution du fichier des systèmes avec quai de livraison       */
+/*********************************************************************/
+             CHKOBJ     OBJ(QTEMP/SYSLIVPF) OBJTYPE(*FILE)
+             MONMSG     MSGID(CPF9801) EXEC(DO)
+             CRTPF      FILE(QTEMP/SYSLIVPF)
+             DLTSPLF    FILE(SYSLIVPF) SPLNBR(*LAST)
+             CALL       PGM(RTVSYSPKG) PARM(&REQUEST)
+             ENDDO
+
+/*********************************************************************/
+/* On boucle sur le fichier constitué                                */
+/*********************************************************************/
+ BOUCLE:     RCVF
+             MONMSG     MSGID(CPF0864) EXEC(GOTO CMDLBL(FINBOUCLE))
+
+             /* Récupération du nom du package                       */
+             CALL       PGM(RTVPKGNAM) PARM(&SYSNAM &REQUEST &BLNAME)
+             /* Vérification s'il n'est pas archivé                  */
+             CHKOBJ     OBJ(MEPPKGPFA) OBJTYPE(*FILE) MBR(&BLNAME)
+             MONMSG     MSGID(CPF9815) EXEC(GOTO CMDLBL(NONARCHIVE))
+             /* S'il est archivé, on ne procède pas à la suite       */
+             GOTO       CMDLBL(FINBOUCLE)
+
+/*********************************************************************/
+/* Constitution de la Dtaara des informations MEPINF                 */
+/*********************************************************************/
+ NONARCHIVE: CALL       PGM(UPDMEPINF) PARM(&BLNAME)
+             CHGDTAARA  DTAARA(MEPINF (93 03)) VALUE(&APP)
+
+/*********************************************************************/
+/* Non archivé, on reconstitue le BL                                 */
+/*********************************************************************/
+             CHKOBJ     OBJ(&BLNAME) OBJTYPE(*FILE)
+             MONMSG     MSGID(CPF9801) EXEC(DO)
+             CHGVAR     VAR(&MSGDTA) VALUE(' ')
+             CHGVAR     VAR(&MSGDTA) VALUE(&BLNAME)
+             CALL       PGM(UPDHST) PARM('CRT0100' &MSGDTA)
+             RBLDPKG    RQSNBR(&REQUEST) ENVNAM(&ENVNAM) APP(&APP) +
+                          EMGLIB(&EMGLIB)
+             ENDDO
+
+/*********************************************************************/
+/* Avertissement si un objcod n'est pas dans la objcodtbl            */
+/*********************************************************************/
+             DLTF       FILE(QTEMP/CODANOWF)
+             MONMSG     MSGID(CPF0000)
+             CRTPF      FILE(QTEMP/CODANOWF) SRCMBR(CODANOPF)
+             DLTSPLF    FILE(CODANOWF) SPLNBR(*LAST)
+             OVRDBF     FILE(CODANOPF) TOFILE(CODANOWF)
+
+             CALL       PGM(CHKOBJCOD) PARM(&BLNAME)
+             MONMSG     MSGID(CPF0000) EXEC(DO)
+             RCVMSG     MSGTYPE(*LAST) MSGDTA(&MSGDTA) MSGID(&MSGID)
+             SNDPGMMSG  MSGID(&MSGID) MSGF(MEPMSGF) MSGDTA(&MSGDTA)
+             IF         COND(&MSGID *EQ 'MEP1050') THEN(DO)
+             CALL       PGM(WRNOBJCOD)
+             ENDDO
+             ENDDO
+
+/*********************************************************************/
+/* Avertissement par msg du nom du package                           */
+/*********************************************************************/
+             CHGVAR     VAR(&MSG) VALUE('*** ATTENTION veuillez +
+                          noter le numéro de package constitué afin +
+                          de le transmettre dans vos changements : +
+                          ' *BCAT &BLNAME *TCAT '.')
+             /* Récup' pour les différents msg envoyés               */
+             RTVMEPINF  BLNAME(&BLNAME) JOB(&SAR10) USER(&USER) +
+                          NBR(&SAR6) TYPE(&TYPJOB) SBMJOB(&SAR10) +
+                          SBMUSR(&SAR10) SBMMSGQ(&SBMMSGQ) +
+                          SBMMSGQLIB(&SBMMSGQLIB) CEX(&APP) +
+                          DATE(&SAR8) TIME(&SAR8)
+             SNDBRKMSG  MSG(&MSG) TOMSGQ(&ECRAN)
+             MONMSG     MSGID(CPF2469)
+             SNDMSG     MSG(&MSG) TOMSGQ(&SBMMSGQLIB/&SBMMSGQ)
+             SNDPGMMSG  MSG(&MSG)
+
+/*********************************************************************/
+/* Historisation du package - Bon de livraison                       */
+/*********************************************************************/
+ ARCHIVAGE:  CHKOBJ     OBJ(MEPPKGPFA) OBJTYPE(*FILE) MBR(&BLNAME)
+             MONMSG     MSGID(CPF9815) EXEC(DO)
+             CPYF       FROMFILE(&BLNAME) TOFILE(MEPPKGPFA) +
+                          TOMBR(&BLNAME) MBROPT(*ADD) CRTFILE(*YES) +
+                          FMTOPT(*MAP *DROP)
+             MONMSG     MSGID(CPF2800) EXEC(GOTO CMDLBL(FINBOUCLE))
+             /* On supprime tout ce qui n'est pas machine locale     */
+             /* OLOC 17/05/06 */
+             RTVNETA    SYSNAME(&SYSNAME)
+             IF         COND(&SYSNAM *NE &SYSNAME) THEN(DO)
+             DLTF       FILE(&BLNAME)
+             ENDDO
+             /* OLOC 17/05/06 */
+             ENDDO
+
+/*********************************************************************/
+/* Historisation de la promotion (Package, User, Date et Heure)      */
+/*********************************************************************/
+             CHGVAR     VAR(&MSGDTA) VALUE(' ')
+             CHGVAR     VAR(&MSGDTA) VALUE(&BLNAME)
+             CALL       PGM(UPDHST) PARM('CRT0200' &MSGDTA)
+             GOTO       CMDLBL(BOUCLE)
+
+ FINBOUCLE:  DLTF       FILE(QTEMP/SYSLIVPF)
+             MONMSG     MSGID(CPF0000)
+             DLTOVR     FILE(CODANOPF)
+             MONMSG     MSGID(CPF9841)
+             ENDPGM

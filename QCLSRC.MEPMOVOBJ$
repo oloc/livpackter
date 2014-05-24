@@ -1,0 +1,121 @@
+/*********************************************************************/
+/* Déplacements des composants du quai de livraison en production.   */
+/*                                                                   */
+/* Programme appelant : MEPPRC                                       */
+/*                                                                   */
+/* Olivier Locard - Prolival - 04/03/05                              */
+/* OLOC 19/04/05 Prise en compte des codes objets sans objet         */
+/* OLOC 13/10/05 Modification du MEPPKGPF                            */
+/* OLOC 24/01/06 Ajout du cas du recompile (9)                       */
+/* OLOC 23/05/06 Ajout de l'historisation UPDHST                     */
+/* OLOC 30/10/06 Remplacement du CRTDUPOBJ par un MOVOBJ             */
+/* OLOC 29/11/06 Retour arrière sur le CRTDUPOBJ                     */
+/* OLOC 09/03/07 Nouveau format des historiques                      */
+/* OLOC 12/03/07 Processus particulier pour les SQLPRC et SQLUDF     */
+/*********************************************************************/
+             PGM        PARM(&BLNAME)
+
+             DCL        VAR(&BLNAME) TYPE(*CHAR) LEN(10)
+             DCL        VAR(&DATA) TYPE(*CHAR) LEN(4)
+             DCL        VAR(&MSGDTA) TYPE(*CHAR) LEN(132) VALUE(' ')
+
+             DCLF       FILE(MEPPKGPF)
+
+             /* Historisation du début de l'opération       23/05/06 */
+             CHGVAR     VAR(&MSGDTA) VALUE(&BLNAME)
+             CALL       PGM(UPDHST) PARM('MEP0140' &MSGDTA)
+
+/*********************************************************************/
+/* Boucle de lecture du BL afin de déplacer les composants           */
+/*********************************************************************/
+             OVRDBF     FILE(MEPPKGPF) MBR(&BLNAME)
+ BOUCLE:     RCVF
+             MONMSG     MSGID(CPF0864) EXEC(GOTO CMDLBL(FIN))
+
+/* 13/10/05    Si l'action est un Delete pas la peine d'aller + loin */
+             IF         COND(&DETACT *EQ '3') THEN(GOTO CMDLBL(BOUCLE))
+
+             /* Mise en production du source                         */
+             /* On ne procède pas au déplact src si c'est recompile  */
+             IF         COND(&DETACT *NE '9') THEN(DO)
+             CALL       PGM(MEPMOVSRC) PARM(&SRCMEPLIB &DETFIL +
+                          &DETSRC &DETSRL &DETFIL &DETSRC)
+             ENDDO
+
+             /* Dans le cas d'un code objet sans objet      19/04/05 */
+             IF         COND(&DETTPE *EQ ' ') THEN(GOTO CMDLBL(BOUCLE))
+             IF         COND(&DETTPE *EQ '*NONE') THEN(GOTO +
+                          CMDLBL(BOUCLE))
+
+             /***** MEP du composant                             *****/
+             CHKOBJ     OBJ(&DETLIB/&DETMBR) OBJTYPE(&DETTPE)
+             MONMSG     MSGID(CPF9801) EXEC(DO)
+
+/*********************************************************************/
+/* 12/03/07 Cas des procédures stockées et des UDFs                  */
+/*********************************************************************/
+             IF         COND((&RDSMTY *EQ 'SQLPRC') *OR (&RDSMTY *EQ +
+                          'SQLUDF')) THEN(DO)
+             /* Constitution du SAVF de transition                   */
+             CHKOBJ     OBJ(QTEMP/MEPSQLSAVF) OBJTYPE(*FILE)
+             MONMSG     MSGID(CPF9801) EXEC(CRTSAVF +
+                          FILE(QTEMP/MEPSQLSAVF))
+             CLRSAVF    FILE(MEPSQLSAVF)
+
+             /* A la place du CRTDUPOBJ on fait un SAV + RST         */
+             SAVOBJ     OBJ(&DETMBR) LIB(&OBJMEPLIB) DEV(*SAVF) +
+                          OBJTYPE(&DETTPE) SAVF(MEPSQLSAVF)
+             RSTOBJ     OBJ(&DETMBR) SAVLIB(&OBJMEPLIB) DEV(*SAVF) +
+                          OBJTYPE(&DETTPE) SAVF(MEPSQLSAVF) +
+                          RSTLIB(&DETLIB)
+             /* Spécial UAT, on supprime l'objet                     */
+             DLTOBJ     OBJLIB(&OBJMEPLIB/&DETMBR) OBJTYPE(&DETTPE)
+
+             GOTO       CMDLBL(OWNER)
+             ENDDO
+/* Fin de l'amendement du 12/03/07                                   */
+/*********************************************************************/
+
+             /* En cas de fichier on force le param du crtdupobj     */
+             CHGVAR     VAR(&DATA) VALUE('*NO')
+             IF         COND((&DETTPE *EQ '*FILE') *AND (&DETATR *EQ +
+                          'PF')) THEN(DO)
+             CHGVAR     VAR(&DATA) VALUE('*YES')
+             ENDDO
+
+/* 29/11/06  CRTDUPOBJ  OBJ(&DETMBR) FROMLIB(&OBJMEPLIB) +
+                          OBJTYPE(&DETTPE) TOLIB(&DETLIB) DATA(&DATA)*/
+
+             MOVOBJ     OBJ(&OBJMEPLIB/&DETMBR) OBJTYPE(&DETTPE) +
+                          TOLIB(&DETLIB)
+
+             /* Conservation des données                             */
+ DATAS:      IF         COND((&CSVDTA *EQ 'Y') *OR (&CSVDTA *EQ +
+                          'y')) THEN(DO)
+             CALL       PGM(MEPMOVDTA) PARM(&DETLIB &DETMBR)
+             ENDDO
+
+             /* Changement de propriétaire                           */
+ OWNER:      CHGOBJOWN  OBJ(&DETLIB/&DETMBR) OBJTYPE(&DETTPE) +
+                          NEWOWN(&DOBOWN)
+
+             GOTO       CMDLBL(BOUCLE)
+
+             ENDDO      /* CHKOBJ */
+
+             /* Historisation que l'objet existait déjà              */
+             CHGVAR     VAR(&MSGDTA) VALUE(' ')
+             CHGVAR     VAR(%SST(&MSGDTA 01 10)) VALUE(&DETMBR)
+             CHGVAR     VAR(%SST(&MSGDTA 11 10)) VALUE(&DETLIB)
+             CHGVAR     VAR(%SST(&MSGDTA 21 08)) VALUE(&DETTPE)
+             CALL       PGM(UPDHST) PARM('MEP1040' &MSGDTA)
+
+             GOTO       CMDLBL(BOUCLE)
+
+ FIN:        DLTOVR     FILE(MEPPKGPF)
+
+             /* Historisation de la fin de l'opération      23/05/06 */
+             CHGVAR     VAR(&MSGDTA) VALUE(&BLNAME)
+             CALL       PGM(UPDHST) PARM('MEP0240' &MSGDTA)
+
+             ENDPGM

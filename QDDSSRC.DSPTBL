@@ -1,0 +1,8 @@
+     A                                      UNIQUE
+     A          R DSPTBLR
+     A            MENU          10A         COLHDG('Menu')
+     A            OPTION         2A         COLHDG('Option')
+     A            FICHIER       10A         COLHDG('Fichier lecture')
+     A            TITRE         30A         COLHDG('Titre')
+     A          K MENU
+     A          K OPTION

@@ -1,0 +1,92 @@
+/*********************************************************************/
+/* Déplacement des sources en toute sécurité.                        */
+/*                                                                   */
+/* Olivier Locard - Prolival - 21/04/05                              */
+/* MOD OLOC 29/11/05  Ajout des commentaires pour pilotage           */
+/* MOD OLOC 12/12/05  Ajout des tests pour les absences de sources + */
+/* sur la machine de production                                      */
+/* MOD OLOC 30/10/06 Remplacement du cpyf en cpysrcf et ajout du rmvm*/
+/* MOD OLOC 29/11/06 Retour arrière sur le RMVM                      */
+/*********************************************************************/
+             PGM        PARM(&FRMLIB &FRMSRC &FRMMBR &TGTLIB &TGTSRC +
+                          &TGTMBR)
+
+             DCL        VAR(&FRMLIB) TYPE(*CHAR) LEN(10)
+             DCL        VAR(&FRMSRC) TYPE(*CHAR) LEN(10)
+             DCL        VAR(&FRMMBR) TYPE(*CHAR) LEN(10)
+             DCL        VAR(&TGTLIB) TYPE(*CHAR) LEN(10)
+             DCL        VAR(&TGTSRC) TYPE(*CHAR) LEN(10)
+             DCL        VAR(&TGTMBR) TYPE(*CHAR) LEN(10)
+
+/* Message pour faciliter la maintenance, le debug et le pilotage    */
+             SNDPGMMSG  MSG('### Début du déplacement du source' +
+                          *BCAT &FRMLIB *TCAT '/' *TCAT &FRMSRC +
+                          *TCAT '.' *TCAT &FRMMBR *BCAT 'vers' +
+                          *BCAT &TGTLIB *TCAT '/' *TCAT &TGTSRC +
+                          *TCAT '.' *TCAT &TGTMBR *BCAT '. ###')
+
+             /* Cas particuliers                                     */
+             IF         COND(&FRMLIB *EQ '*NONE') THEN(RETURN)
+             IF         COND(&FRMSRC *EQ '*NONE') THEN(RETURN)
+             IF         COND(&FRMMBR *EQ '*NONE') THEN(RETURN)
+             /* Si les sources ne sont pas à mettre en production    */
+             IF         COND(&TGTLIB *EQ '*NONE') THEN(RETURN)
+             IF         COND(&TGTSRC *EQ '*NONE') THEN(RETURN)
+
+             /* Gestion des codes retours par le paramétrage         */
+             CHKOBJ     OBJ(&FRMLIB/&FRMSRC) OBJTYPE(*FILE) +
+                          MBR(&FRMMBR)
+             MONMSG     MSGID(CPF9810) EXEC(DO)
+             CHGVAR     VAR(&FRMLIB) VALUE('*NONE')
+             RETURN
+             ENDDO
+             MONMSG     MSGID(CPF9801) EXEC(DO)
+             CHGVAR     VAR(&FRMSRC) VALUE('*NONE')
+             RETURN
+             ENDDO
+             MONMSG     MSGID(CPF9815) EXEC(DO)
+             CHGVAR     VAR(&FRMMBR) VALUE('*NONE')
+             RETURN
+             ENDDO
+
+             CHKOBJ     OBJ(&TGTLIB/&TGTSRC) OBJTYPE(*FILE) +
+                          MBR(&TGTMBR)
+             /* Si *LIB cible n'existe pas code retour par parmetre  */
+             MONMSG     MSGID(CPF9810) EXEC(DO)
+             CHGVAR     VAR(&TGTLIB) VALUE('*NONE')
+             RETURN
+             ENDDO
+             /* Si fichier source n'existe pas aucune importance     */
+             MONMSG     MSGID(CPF9801) EXEC(GOTO CMDLBL(CPYF))
+             /* Si membre source n'existe pas aucune importance      */
+             MONMSG     MSGID(CPF9815) EXEC(GOTO CMDLBL(CPYF))
+             /* Sinon le membre existe & on le supprime parce que ADD*/
+             RMVM       FILE(&TGTLIB/&TGTSRC) MBR(&TGTMBR)
+
+ CPYF:       CPYF       FROMFILE(&FRMLIB/&FRMSRC)                    +
+                          TOFILE(&TGTLIB/&TGTSRC) FROMMBR(&FRMMBR)   +
+                          TOMBR(&TGTMBR) MBROPT(*ADD) CRTFILE(*YES)  +
+                          FMTOPT(*NOCHK)
+/* 02/11/06  CPYSRCF    FROMFILE(&FRMLIB/&FRMSRC)                    +
+                          TOFILE(&TGTLIB/&TGTSRC) FROMMBR(&FRMMBR)   +
+                          TOMBR(&TGTMBR) MBROPT(*REPLACE)            */
+             /* Vérification que la copie s'est bien passée          */
+             CHKOBJ     OBJ(&TGTLIB/&TGTSRC) OBJTYPE(*FILE) +
+                          MBR(&TGTMBR)
+             MONMSG     MSGID(CPF9800) EXEC(DO)
+             SNDMSG     MSG('*** Source' *BCAT &TGTLIB *TCAT '/' +
+                          *TCAT &TGTSRC *TCAT '.' *TCAT &TGTMBR +
+                          *BCAT 'non copié ***') TOUSR(*SYSOPR) +
+                          MSGTYPE(*INQ)
+             GOTO       CMDLBL(FIN)
+             ENDDO
+
+/* 29/11/06  RMVM       FILE(&FRMLIB/&FRMSRC) MBR(&FRMMBR)           */
+
+/* Message pour faciliter la maintenance, le debug et le pilotage    */
+             SNDPGMMSG  MSG('### Fin du déplacement du source' +
+                          *BCAT &FRMLIB *TCAT '/' *TCAT &FRMSRC +
+                          *TCAT '.' *TCAT &FRMMBR *BCAT 'vers' +
+                          *BCAT &TGTLIB *TCAT '/' *TCAT &TGTSRC +
+                          *TCAT '.' *TCAT &TGTMBR *BCAT '. ###')
+ FIN:        ENDPGM

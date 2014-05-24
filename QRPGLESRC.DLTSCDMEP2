@@ -1,0 +1,28 @@
+     H**********************************************************************
+     H* Olivier Locard - Prolival - Suppression d'une planification
+     H*
+     H* OLOC 07/12/05 : Fusion de l'ensemble des historiques
+     H**********************************************************************
+     FMEPLOGPF  UF   E           K DISK    RENAME(MEPLOG:MEPLOGR)
+     D**********************************************************************
+     D* Déclaration de variables                                           *
+     D**********************************************************************
+     C     *ENTRY        PLIST
+     C                   PARM                    BLNAME           10
+     C                   PARM                    MEPDATE           8
+     C                   PARM                    MEPTIME           8
+     C*
+     C                   MOVE      '        '    MEPTIME
+     C     KEY           KLIST
+     C                   KFLD                    MEPDATE
+     C                   KFLD                    MEPTIME
+     C                   KFLD                    BLNAME
+     C**********************************************************************
+     C* Exécution de la requête                                            *
+     C**********************************************************************
+     C     KEY           CHAIN     MEPLOGR                            90
+     C   90              GOTO      FIN
+     C                   DELETE    MEPLOGR
+     C*
+     C     FIN           TAG
+     C                   SETON                                            LR

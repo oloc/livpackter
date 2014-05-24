@@ -1,0 +1,40 @@
+/*********************************************************************/
+/* Avertit par Sndbrkmsg du nom du package qui a été envoyé dans le  */
+/* quai de livraison                                                 */
+/*                                                                   */
+/* Olivier Locard - Prolival - 14/03/05                              */
+/*********************************************************************/
+             PGM        PARM(&PKGNAM)
+
+             /* Variables passées en paramètres                      */
+             DCL        VAR(&PKGNAM) TYPE(*CHAR) LEN(10)
+             DCL        VAR(&MSG) TYPE(*CHAR) LEN(256)
+
+             /* Variables pour le découpage du Receiver              */
+             DCL        VAR(&SBMJOB) TYPE(*CHAR) LEN(10)
+             DCL        VAR(&SBMUSR) TYPE(*CHAR) LEN(10)
+             DCL        VAR(&SBMMSGQ) TYPE(*CHAR) LEN(10)
+             DCL        VAR(&SBMMSGQLIB) TYPE(*CHAR) LEN(10)
+
+/*********************************************************************/
+/* Appel de l'API qui retourne les attributs du submitter            */
+/*********************************************************************/
+             CALL       PGM(USRJOBI) PARM(&SBMUSR &SBMJOB &SBMMSGQ +
+                          &SBMMSGQLIB)
+
+/*********************************************************************/
+/* Envoi des messages                                                */
+/*********************************************************************/
+             CHGVAR     VAR(&MSG) VALUE('*** ATTENTION veuillez +
+                          noter le numéro de package constitué afin +
+                          de le transmettre dans vos changements : +
+                          ' *BCAT &PKGNAM *TCAT '.')
+             SNDBRKMSG  MSG(&MSG) TOMSGQ(&SBMJOB)
+             SNDMSG     MSG(&MSG) TOUSR(&SBMUSR)
+             SNDMSG     MSG(&MSG) TOMSGQ(&SBMMSGQLIB/&SBMMSGQ)
+             SNDPGMMSG  MSG(&MSG)
+
+/*********************************************************************/
+/* Fin de programme                                                  */
+/*********************************************************************/
+ FIN:        ENDPGM

@@ -1,0 +1,23 @@
+/*********************************************************************/
+/* Récupération de la *LIB d'un fichier par DSPFD                    */
+/*                                                                   */
+/* Olivier Locard - Prolival - 01/03/05                              */
+/*********************************************************************/
+             PGM        PARM(&FILE &LIB)
+
+             DCL        VAR(&FILE) TYPE(*CHAR) LEN(10)
+             DCL        VAR(&LIB) TYPE(*CHAR) LEN(10)
+
+             DCLF       FILE(QAFDBASI)
+
+             DLTF       FILE(QTEMP/QDSPFD)
+             MONMSG     MSGID(CPF0000)
+             DSPFD      FILE(&FILE) TYPE(*BASATR) OUTPUT(*OUTFILE) +
+                          FILEATR(*PF) OUTFILE(QTEMP/QDSPFD)
+
+             OVRDBF     FILE(QAFDBASI) TOFILE(QTEMP/QDSPFD)
+             /* Lecture du résultat                                  */
+             RCVF
+             CHGVAR     VAR(&LIB) VALUE(&ATLIB)
+
+             ENDPGM

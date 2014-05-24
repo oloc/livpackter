@@ -1,0 +1,62 @@
+/*********************************************************************/
+/* Dérivé de l'API QUSRJOBI qui permet de récupérer des informations */
+/* sur le soumetteur d'un batch                                      */
+/*                                                                   */
+/* Olivier Locard - Prolival - 14/04/05                              */
+/*********************************************************************/
+             PGM        PARM(&SBMUSR &SBMJOB &SBMMSGQ &SBMMSGQLIB)
+
+             /* Variables pour le Rtvjoba                            */
+             DCL        VAR(&JOB) TYPE(*CHAR) LEN(10)
+             DCL        VAR(&USER) TYPE(*CHAR) LEN(10)
+             DCL        VAR(&NBR) TYPE(*CHAR) LEN(6)
+
+             /* Variables pour le Qusrjobi                           */
+             DCL        VAR(&RECEIVER) TYPE(*CHAR) LEN(544)
+             DCL        VAR(&LENGHT) TYPE(*DEC) LEN(4) VALUE(0544)
+             DCL        VAR(&FORMAT) TYPE(*CHAR) LEN(8) +
+                          VALUE('JOBI0400')
+             DCL        VAR(&QUALIFIED) TYPE(*CHAR) LEN(26)
+             DCL        VAR(&INTERNAL) TYPE(*CHAR) LEN(16) VALUE(' ')
+
+             /* Variables pour le découpage du Receiver              */
+             DCL        VAR(&SBMJOB)     TYPE(*CHAR) LEN(10)
+             DCL        VAR(&SBMUSR)     TYPE(*CHAR) LEN(10)
+             DCL        VAR(&SBMMSGQ)    TYPE(*CHAR) LEN(10)
+             DCL        VAR(&SBMMSGQLIB) TYPE(*CHAR) LEN(10)
+             DCL        VAR(&TYPJOB)     TYPE(*CHAR) LEN(1)
+
+/*********************************************************************/
+/* Récupération des attributs du job en cours                        */
+/*********************************************************************/
+             RTVJOBA    JOB(&JOB) USER(&USER) NBR(&NBR)
+             CHGVAR     VAR(&QUALIFIED) VALUE(&JOB *CAT &USER *CAT +
+                          &NBR)
+
+/*********************************************************************/
+/* Appel de l'API qui retourne les attributs du submitter            */
+/*********************************************************************/
+             CALL       PGM(QUSRJOBI) PARM(&RECEIVER &LENGHT &FORMAT +
+                          &QUALIFIED &INTERNAL)
+
+/*********************************************************************/
+/* Découpage de la variable de retour en données exploitables        */
+/*********************************************************************/
+             CHGVAR     VAR(&TYPJOB) VALUE(%SST(&RECEIVER 061 01))
+             CHGVAR     VAR(&SBMJOB) VALUE(%SST(&RECEIVER 254 10))
+             CHGVAR     VAR(&SBMUSR) VALUE(%SST(&RECEIVER 264 10))
+             CHGVAR     VAR(&SBMMSGQ) VALUE(%SST(&RECEIVER 280 10))
+             CHGVAR     VAR(&SBMMSGQLIB) VALUE(%SST(&RECEIVER 290 10))
+
+             /* Cas d'un job interactif                              */
+             IF         COND(&TYPJOB *EQ 'I') THEN(DO)
+             CHGVAR     VAR(&SBMJOB) VALUE(&JOB)
+             CHGVAR     VAR(&SBMUSR) VALUE(&USER)
+             ENDDO
+
+/*********************************************************************/
+/* Fin de programme                                                  */
+/*********************************************************************/
+ FIN:        SNDPGMMSG  MSG(&SBMUSR *BCAT &SBMJOB *BCAT &SBMMSGQ +
+                          *BCAT &SBMMSGQLIB *BCAT &TYPJOB)
+             ENDPGM

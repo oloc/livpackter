@@ -1,0 +1,32 @@
+/*********************************************************************/
+/* Programme qui vérifie la présence des SAVFs d'archivage.          */
+/* S'ils existent on les renomme                                     */
+/*                                                                   */
+/* Programme appelant : MEPPRC                                       */
+/*                                                                   */
+/* Olivier Locard - Prolival - 02/03/2007                            */
+/*********************************************************************/
+             PGM        PARM(&BLNAME)
+
+             DCL        VAR(&BLNAME) TYPE(*CHAR) LEN(10)
+             DCL        VAR(&SAVF) TYPE(*CHAR) LEN(10)
+
+             /* Cas du SAVF d'exploitation                           */
+ SAV:        CHGVAR     VAR(&SAVF) VALUE('SAV' *TCAT %SST(&BLNAME 4 7))
+             CHKOBJ     OBJ(&SAVF) OBJTYPE(*FILE)
+             MONMSG     MSGID(CPF9801) EXEC(DO)
+             GOTO       CMDLBL(EMG)
+             ENDDO
+             /* S'il est présent, on l'archive                       */
+             CALL       PGM(BKPRNMSAVF) PARM(&BLNAME 'SAV')
+
+             /* Cas du SAVF d'emergency                              */
+ EMG:        CHGVAR     VAR(&SAVF) VALUE('EMG' *TCAT %SST(&BLNAME 4 7))
+             CHKOBJ     OBJ(&SAVF) OBJTYPE(*FILE)
+             MONMSG     MSGID(CPF9801) EXEC(DO)
+             GOTO       CMDLBL(FIN)
+             ENDDO
+             /* S'il est présent, on l'archive                       */
+             CALL       PGM(BKPRNMSAVF) PARM(&BLNAME 'EMG')
+
+ FIN:        ENDPGM

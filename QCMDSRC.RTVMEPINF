@@ -1,0 +1,28 @@
+/* ALLOW(*IPGM *BPGM)                                                */
+             CMD        PROMPT('Retrieve Job Informations')
+             PARM       KWD(BLNAME) TYPE(*CHAR) LEN(10) RTNVAL(*YES) +
+                          PROMPT('CL var for BLNAME       (10)')
+             PARM       KWD(JOB) TYPE(*CHAR) LEN(10) RTNVAL(*YES) +
+                          PROMPT('CL var for JOB          (10)')
+             PARM       KWD(USER) TYPE(*CHAR) LEN(10) RTNVAL(*YES) +
+                          PROMPT('CL var for USER         (10)')
+             PARM       KWD(NBR) TYPE(*CHAR) LEN(6) RTNVAL(*YES) +
+                          PROMPT('CL var for NBR           (6)')
+             PARM       KWD(TYPE) TYPE(*CHAR) LEN(1) RTNVAL(*YES) +
+                          PROMPT('CL var for TYPE          (1)')
+             PARM       KWD(SBMJOB) TYPE(*CHAR) LEN(10) RTNVAL(*YES) +
+                          PROMPT('CL var for SBMJOB       (10)')
+             PARM       KWD(SBMUSR) TYPE(*CHAR) LEN(10) RTNVAL(*YES) +
+                          PROMPT('CL var for SBMUSR       (10)')
+             PARM       KWD(SBMMSGQ) TYPE(*CHAR) LEN(10) +
+                          RTNVAL(*YES) PROMPT('CL var for +
+                          SBMMSGQ      (10)')
+             PARM       KWD(SBMMSGQLIB) TYPE(*CHAR) LEN(10) +
+                          RTNVAL(*YES) PROMPT('CL var for +
+                          SBMMSGQLIB   (10)')
+             PARM       KWD(CEX) TYPE(*CHAR) LEN(03) RTNVAL(*YES) +
+                          PROMPT('CL var for CEX           (3)')
+             PARM       KWD(DATE) TYPE(*CHAR) LEN(08) RTNVAL(*YES) +
+                          PROMPT('CL var for DATE          (8)')
+             PARM       KWD(TIME) TYPE(*CHAR) LEN(08) RTNVAL(*YES) +
+                          PROMPT('CL var for TIME          (8)')

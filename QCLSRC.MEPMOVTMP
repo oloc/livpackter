@@ -1,0 +1,83 @@
+/*********************************************************************/
+/* Déplacement des objets existant en production que l'on souhaite   */
+/* relivrer, vers une bibliothèque Tampon.                           */
+/* Cette manoeuvre garantit une sécurité et une intégrité des données*/
+/*                                                                   */
+/* Olivier Locard - Prolival - 04/03/05                              */
+/* MOD : OLOC 19/04/05 Prise en compte des Codes Objets sans objet   */
+/* MOD : OLOC 13/10/05 Modification du MEPPKGPF                      */
+/* MOD : OLOC 29/11/05 Fusion avec la procédure qui gérait l'EMG   + */
+/* En fonction du trigramme, on prend les *LIB d'EMG ou de prod'   + */
+/* Ajout des commentaires pour le pilotage                           */
+/* MOD : OLOC 12/12/05 Gestion du cas où il n'y a pas de *LIB de   + */
+/* départ. Ce qui est le cas des sources sans objets ou d'une      + */
+/* absence de *LIB d'emergency.                                      */
+/*********************************************************************/
+             PGM        PARM(&BLNAME &TRI)
+
+             DCL        VAR(&BLNAME) TYPE(*CHAR) LEN(10)
+             DCL        VAR(&FRMLIB) TYPE(*CHAR) LEN(10)
+             DCL        VAR(&FRMSRL) TYPE(*CHAR) LEN(10)
+             DCL        VAR(&TMPLIB) TYPE(*CHAR) LEN(10)
+             DCL        VAR(&TRI)    TYPE(*CHAR) LEN(10)
+
+             DCLF       FILE(MEPPKGPF)
+             OVRDBF     FILE(MEPPKGPF) MBR(&BLNAME)
+
+             RTVDTAARA  DTAARA(MEPPRM (1 10)) RTNVAR(&TMPLIB)
+             CLRLIB     LIB(&TMPLIB)
+
+/*********************************************************************/
+/* Message pour faciliter la maintenance, le debug et le pilotage    */
+/*********************************************************************/
+             SNDPGMMSG  MSG('### Début du déplacement des objets de' +
+                          *BCAT &BLNAME *BCAT 'vers la bibliothèque +
+                          tampon' *BCAT &TMPLIB *BCAT '. ###')
+
+/*********************************************************************/
+/* Boucle de lecture du BL afin de déplacer les composants           */
+/*********************************************************************/
+ BOUCLE:     RCVF
+             MONMSG     MSGID(CPF0864) EXEC(GOTO CMDLBL(FIN))
+
+             /* Ajout du 29/11/05                                    */
+             /* En fonction du Tri on prend les *LIB EMG ou PRD      */
+             IF         COND(&TRI *EQ 'SAV') THEN(DO)
+             CHGVAR     VAR(&FRMLIB) VALUE(&DETLIB)
+             CHGVAR     VAR(&FRMSRL) VALUE(&DETSRL)
+             ENDDO
+             IF         COND(&TRI *EQ 'EMG') THEN(DO)
+             CHGVAR     VAR(&FRMLIB) VALUE(&EMGLIB)
+             CHGVAR     VAR(&FRMSRL) VALUE(&EMGLIB)
+             ENDDO
+             /* Fin de l'ajout du 29/11/05                           */
+
+             /* Déplacement du source de l'objet lu dans le BL       */
+             CALL       PGM(MEPMOVSRC) PARM(&FRMSRL &DETFIL &DETSRC +
+                          &TMPLIB &DETFIL &DETSRC)
+
+             /* Cas où il n'y a pas d'objet à manipuler     12/12/05 */
+             IF         COND(&FRMLIB *EQ '*NONE') THEN(GOTO +
+                          CMDLBL(BOUCLE))
+
+             /* Dans le cas d'un code objet sans objet      19/04/05 */
+             IF         COND(&DETTPE *EQ ' ') THEN(GOTO CMDLBL(BOUCLE))
+
+             /* Vérification de présence de l'obj à mettre de coté   */
+             CHKOBJ     OBJ(&FRMLIB/&DETMBR) OBJTYPE(&DETTPE)
+             MONMSG     MSGID(CPF9801) EXEC(GOTO CMDLBL(BOUCLE))
+
+             /* Déplacement vers la Lib tampon                       */
+             MOVOBJ     OBJ(&FRMLIB/&DETMBR) OBJTYPE(&DETTPE) +
+                          TOLIB(&TMPLIB)
+
+             GOTO       CMDLBL(BOUCLE)
+
+/*********************************************************************/
+/* Message pour faciliter la maintenance, le debug et le pilotage    */
+/*********************************************************************/
+ FIN:        SNDPGMMSG  MSG('### Fin du déplacement des objets de' +
+                          *BCAT &BLNAME *BCAT 'vers la bibliothèque +
+                          tampon' *BCAT &TMPLIB *BCAT '. ###')
+
+             ENDPGM

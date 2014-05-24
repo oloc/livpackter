@@ -1,0 +1,6 @@
+     A                                      UNIQUE
+     A          R SYSLIV
+     A            SYSNAM        10          COLHDG('Systeme')
+     A            ENVNAM        10          COLHDG('Environnement')
+     A          K SYSNAM                    DESCEND
+     A          K ENVNAM                    DESCEND

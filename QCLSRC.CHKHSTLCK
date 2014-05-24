@@ -1,0 +1,32 @@
+/*********************************************************************/
+/* Historisation des allocations qui empêchent la mise en production */
+/* On boucle sur le fichier des objets alloués OBJLCKPF              */
+/*                                                                   */
+/* Programme appelant : CHKPKGLCK                                    */
+/*                                                                   */
+/* Olivier Locard - Prolival 30/12/05                                */
+/* OLOC 09/03/07 Nouveau format des historiques                      */
+/*********************************************************************/
+             PGM        PARM(&TRI)
+
+             DCL        VAR(&MSGDTA) TYPE(*CHAR) LEN(132)
+             DCL        VAR(&MSGID) TYPE(*CHAR) LEN(7)
+             DCL        VAR(&TRI) TYPE(*CHAR) LEN(3)
+
+             DCLF       FILE(OBJLCKPF)
+
+ BOUCLE:     RCVF
+             MONMSG     MSGID(CPF0864) EXEC(GOTO CMDLBL(FINBOUCLE))
+
+             /* Constitution des fields data                         */
+             CHGVAR     VAR(&MSGID) VALUE(&TRI *TCAT '1012')
+             CHGVAR     VAR(&MSGDTA) VALUE(' ')
+             CHGVAR     VAR(%SST(&MSGDTA 1 10)) VALUE(&LIB)
+             CHGVAR     VAR(%SST(&MSGDTA 11 10)) VALUE(&OBJ)
+             CHGVAR     VAR(%SST(&MSGDTA 21 07)) VALUE(&OBJTYPE)
+
+             /* Historisation des allocations                        */
+             CALL       PGM(UPDHST) PARM(&MSGID &MSGDTA)
+             GOTO       CMDLBL(BOUCLE)
+
+ FINBOUCLE:  ENDPGM

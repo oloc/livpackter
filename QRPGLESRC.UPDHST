@@ -1,0 +1,48 @@
+     H**********************************************************************
+     H* Mise à jour de l'historique détaillé de la mise en production
+     H*
+     H* Olivier Locard - Prolival - 28/12/05
+     H* OLOC 08/03/07 Utilisation de la dataarea des informations MEPINF
+     H**********************************************************************
+     HDATFMT(*ISO)
+     FMEPHSTL0  UF A E           K DISK    RENAME(MEPHST:MEPHSTR)
+     DWMEPINF          DS                  DTAARA(MEPINF)
+     DBLNAME                  01     10A
+     DMEPUSER                 17     26A
+     DMEPDATE                 77     84A
+     DFILLER1                 85     92A
+     DAPP                     93     95A
+     DFILLER2                 96   2000A
+     DCLOCK            S               Z
+      * Data structure pour découper le format de Time.
+     DTIMBRE           DS            26
+     DTANNEE                   1      4  0
+     DTSEP1                    5      5
+     DTMOIS                    6      7  0
+     DTSEP2                    8      8
+     DTJOUR                    9     10  0
+     DTSEP3                   11     11
+     DTHEURE                  12     13
+     DTSEP4                   14     14
+     DTMINUTE                 15     16
+     DTSEP5                   17     17
+     DTSECONDE                18     19
+     DTSEP6                   20     20
+     DTMMSEC                  21     22
+     DTFILLER                 23     26
+     C*
+     C     *ENTRY        PLIST
+     C                   PARM                    MSGID             7
+     C                   PARM                    MSGDTA          132
+     C*
+     C                   IN        *DTAARA
+     C* Récupération de la date et de l'heure
+     C                   TIME                    CLOCK
+     C                   MOVE      *BLANKS       MEPTIME
+     C                   MOVEL     CLOCK         TIMBRE
+     C     THEURE        CAT       TMINUTE       MEPTIME
+     C                   CAT       TSECONDE:0    MEPTIME
+     C                   CAT       TMMSEC:0      MEPTIME
+     C*
+     C                   WRITE     MEPHSTR
+     C                   SETON                                            LR

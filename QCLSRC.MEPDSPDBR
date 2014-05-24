@@ -1,0 +1,115 @@
+/*********************************************************************/
+/* Constitution d'un fichier BL temporaire contenant les LF relatifs */
+/* au PF du BL en cours de traitement.                               */
+/*                                                                   */
+/* Programme appelant : MEPPRC                                       */
+/*                                                                   */
+/* Olivier Locard - Prolival - 18/10/05                              */
+/* MOD OLOC 19/10/05 : Passage par un fichier BL dont la clef est    */
+/* plus dans les critères AS400 qu'Implementer                       */
+/* MOD OLOC 08/11/05 : CHKOBJ avant DSPDBR au cas où le fichier      */
+/* n'existe pas.                                                     */
+/* OLOC 09/01/05 Ajout du MONMSG MSGID(CPF5009) pour éviter les clefs*/
+/*               uniques                                             */
+/* OLOC 12/07/06 Mise en place de l'historisation                    */
+/* OLOC 09/03/07 Nouveau format des historiques                      */
+/*********************************************************************/
+             PGM
+
+             DCL        VAR(&BLNAME) TYPE(*CHAR) LEN(10)
+             DCL        VAR(&BLTMP) TYPE(*CHAR) LEN(10)
+             DCL        VAR(&CRTSEQNBRD) TYPE(*DEC) LEN(4 0)
+             DCL        VAR(&MSGDTA) TYPE(*CHAR) LEN(132) VALUE(' ')
+
+             DCLF       FILE(MEPPKGPF)
+
+             /* Récupération du nom du bon de livraison              */
+             RTVDTAARA  DTAARA(MEPINF (1 10)) RTNVAR(&BLNAME)
+
+             /* Historisation du début de l'opération       12/07/06 */
+             CHGVAR     VAR(&MSGDTA) VALUE(&BLNAME)
+             CALL       PGM(UPDHST) PARM('MEP0120' &MSGDTA)
+
+             /* Nom du BL temporaire                                 */
+             CHGVAR     VAR(&BLTMP) VALUE('TMP' *TCAT %SST(&BLNAME 4 +
+                          7))
+             DLTF       FILE(QTEMP/&BLTMP)
+             MONMSG     MSGID(CPF2105)
+
+/*********************************************************************/
+/* On boucle sur le Bon de Livraison pour repérer les fichiers LF    */
+/*********************************************************************/
+             OVRDBF     FILE(MEPPKGPF) TOFILE(MEPPKGPF) MBR(&BLNAME)
+ BOUCLE:     RCVF
+             MONMSG     MSGID(CPF0864) EXEC(GOTO CMDLBL(FINBOUCLE))
+
+/*********************************************************************/
+/* Constitutions de la DataBase Relations si le composants est PF    */
+/*********************************************************************/
+             IF         COND((&DETTPE *EQ '*FILE') *AND (&DETATR *EQ +
+                          'PF') *AND (&DETACT *NE '3')) THEN(DO)
+             /* 08/11/05 Ajout pour éviter les nouveaux fichiers     */
+             CHKOBJ     OBJ(&DETLIB/&DETMBR) OBJTYPE(*FILE)
+             MONMSG     MSGID(CPF9801) EXEC(GOTO CMDLBL(BOUCLE))
+             /* 08/11/05 Fin de l'ajout                              */
+             DSPDBR     FILE(&DETLIB/&DETMBR) OUTPUT(*OUTFILE) +
+                          OUTFILE(QTEMP/MEPDSPDBR)
+
+             /* Pour le numéro de séquence de création du LF, on +
+             prend celui du PF auquel on ajoute 1 pour être sûr  +
+             d'avoir le PF et de ne pas interférer avec autre chose  */
+             IF         COND(&CRTSEQNBR *EQ '    ') THEN(CHGVAR +
+                          VAR(&CRTSEQNBR) VALUE('0000'))
+             CHGVAR     VAR(&CRTSEQNBRD) VALUE(&CRTSEQNBR)
+             CHGVAR     VAR(&CRTSEQNBRD) VALUE(&CRTSEQNBRD + 1)
+             CHGVAR     VAR(&CRTSEQNBR)  VALUE(&CRTSEQNBRD)
+
+/*********************************************************************/
+/* Constitutions du fichier BL temporaire                            */
+/*********************************************************************/
+             CHKOBJ     OBJ(&BLTMP) OBJTYPE(*FILE)
+             MONMSG     MSGID(CPF9801) EXEC(DO)
+             CRTPF      FILE(QTEMP/&BLTMP) SRCFILE(QDDSSRC) +
+                          SRCMBR(MEPPKGPF2)
+             DLTSPLF    FILE(&BLTMP)
+             CPYF       FROMFILE(MEPPKGPF) TOFILE(&BLTMP) +
+                          FROMMBR(&BLNAME) MBROPT(*REPLACE) +
+                          FMTOPT(*MAP *DROP)
+             ENDDO
+
+             OVRDBF     FILE(QADSPDBR) TOFILE(MEPDSPDBR)
+             OVRDBF     FILE(MEPPKGPF2) TOFILE(&BLTMP)
+             SNDPGMMSG  MSG('*** Objet :' *BCAT &DETMBR *TCAT ', +
+                          Bibliothèque :' *BCAT &DETLIB *TCAT ', +
+                          Type :' *BCAT &DETTPE *TCAT ', Attribut +
+                          :' *BCAT &DETATR *TCAT ', Code objet :' +
+                          *BCAT &DETTYP *TCAT ', Système :' *BCAT +
+                          &SYSNAM *TCAT ', Quai :' *BCAT &OBJMEPLIB +
+                          *TCAT ', Application :' *BCAT &APP *TCAT +
+                          ', Emergency :' *BCAT &EMGLIB *BCAT '***')
+             CALL       PGM(UPDPKGDBR) PARM(&DMWINO &CRTSEQNBR +
+                          &DETMBR &DETTPE &SYSNAM &DETLIB +
+                          &DOBOWN &OBJMEPLIB &APP &EMGLIB)
+             MONMSG     MSGID(CPF5009)
+             DLTOVR     FILE(MEPPKGPF2)
+             DLTOVR     FILE(QADSPDBR)
+             DLTF       FILE(QTEMP/MEPDSPDBR)
+             MONMSG     MSGID(CPF2105)
+             ENDDO
+
+             GOTO       CMDLBL(BOUCLE)
+
+/*********************************************************************/
+/* Fin de programme                                                  */
+/*********************************************************************/
+ FINBOUCLE:  DLTOVR     FILE(MEPPKGPF)
+             CPYF       FROMFILE(&BLTMP) TOFILE(MEPPKGPF) +
+                          TOMBR(&BLNAME) MBROPT(*REPLACE) +
+                          FMTOPT(*MAP *DROP)
+             MONMSG     MSGID(CPF2802 CPF2817)
+
+             /* Historisation de la fin de l'opération      12/07/06 */
+             CHGVAR     VAR(&MSGDTA) VALUE(&BLNAME)
+             CALL       PGM(UPDHST) PARM('MEP0220' &MSGDTA)
+
+             ENDPGM

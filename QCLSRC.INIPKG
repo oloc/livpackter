@@ -1,0 +1,40 @@
+/*********************************************************************/
+/* Suppression des bons de livraison en attente de livraison         */
+/*                                                                   */
+/* Programme appelant : MEPINI                                       */
+/*                                                                   */
+/* Olivier Locard - Prolival - 09/10/06                              */
+/* OLOC 08/03/07 Nouveau format des historiques                      */
+/*********************************************************************/
+             PGM
+
+             DCL        VAR(&BLNAME) TYPE(*CHAR) LEN(10)
+             DCL        VAR(&RTNLIB) TYPE(*CHAR) LEN(10)
+
+             DCLF       FILE(MEPSYSTBL)
+
+             /* Historisation                                        */
+             CALL       PGM(UPDHST) PARM('INI0130' ' ')
+
+             /* Pour éviter les suppressions excessives, on se cale  +
+                sur la LIB de ce programme                           */
+             RTVOBJD    OBJ(INIPKG) OBJTYPE(*PGM) RTNLIB(&RTNLIB)
+
+/*********************************************************************/
+/* On boucle sur le fichier des trigrammes afin de retrouver les     */
+/* différents bons de livraison importés pour l'installation         */
+/*********************************************************************/
+ BOUCLE:     RCVF
+             MONMSG     MSGID(CPF0864) EXEC(GOTO CMDLBL(FINBOUCLE))
+
+             CHGVAR     VAR(&BLNAME) VALUE(&SYSTRI *TCAT '*')
+             DLTF       FILE(&RTNLIB/&BLNAME)
+             MONMSG     MSGID(CPF2125) EXEC(SNDPGMMSG MSG('*** Aucun +
+                          objet' *BCAT &BLNAME *BCAT 'trouvé.'))
+
+             GOTO       CMDLBL(BOUCLE)
+
+             /* Historisation                                        */
+ FINBOUCLE:  CALL       PGM(UPDHST) PARM('INI0230' ' ')
+
+             ENDPGM

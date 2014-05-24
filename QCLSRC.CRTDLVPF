@@ -1,0 +1,68 @@
+/*********************************************************************/
+/* Chapeau de création du fichier MEP qui servira de support au      */
+/* processus de déplacement des objets du quai de livraison en prod. */
+/*                                                                   */
+/* &BLNAME : Nom du bon de livraison                                 */
+/* &DATE   : Date de l'intégration en production                     */
+/*                                                                   */
+/* Olivier Locard - Prolival - 02/03/05                              */
+/* OLOC 24/07/07 : Supp. des alloc./désalloc. de la objcodtbl        */
+/*********************************************************************/
+             PGM        PARM(&BLNAME)
+
+             DCL        VAR(&BLNAME) TYPE(*CHAR) LEN(10)
+             DCL        VAR(&CRTLIB) TYPE(*CHAR) LEN(10)
+             DCL        VAR(&DATE) TYPE(*CHAR) LEN(8)
+             DCL        VAR(&MEPNAME) TYPE(*CHAR) LEN(10)
+             /* Variables de temps                                   */
+             DCL        VAR(&QDAY) TYPE(*CHAR) LEN(2)
+             DCL        VAR(&QMONTH) TYPE(*CHAR) LEN(2)
+             DCL        VAR(&QTIME) TYPE(*CHAR) LEN(8)
+             DCL        VAR(&QYEAR) TYPE(*CHAR) LEN(2)
+
+             /*  Fermeture du BL au cas où le traitment précédent    +
+                 était en erreur                                     */
+             CLOF       OPNID(&BLNAME)
+             MONMSG     MSGID(CPF0000)
+             ALCOBJ     OBJ((&BLNAME *FILE *EXCL))
+
+/*********************************************************************/
+/* Récupération de la date pour remplir le fichier MEP               */
+/*********************************************************************/
+             RTVSYSVAL  SYSVAL(QYEAR) RTNVAR(&QYEAR)
+             RTVSYSVAL  SYSVAL(QMONTH) RTNVAR(&QMONTH)
+             RTVSYSVAL  SYSVAL(QDAY) RTNVAR(&QDAY)
+             RTVSYSVAL  SYSVAL(QTIME) RTNVAR(&QTIME)
+
+             CHGVAR     VAR(&DATE) VALUE('20' *TCAT &QYEAR *TCAT +
+                          &QMONTH *TCAT &QDAY)
+/*********************************************************************/
+/* Création du membre dans le fichier MEP                            */
+/*********************************************************************/
+ ADDPFM:     CHKOBJ     OBJ(MEPPKGPF) OBJTYPE(*FILE) MBR(&BLNAME)
+             MONMSG     MSGID(CPF9815) EXEC(DO)
+             ADDPFM     FILE(MEPPKGPF) MBR(&BLNAME)
+             ENDDO
+             CLRPFM     FILE(MEPPKGPF) MBR(&BLNAME)
+
+/*********************************************************************/
+/* Renseignement du fichier MEP avec les *LIB de production          */
+/*********************************************************************/
+ CRTMEPPF:   OVRDBF     FILE(OVRPKGPF) TOFILE(&BLNAME) LVLCHK(*NO)
+             OVRDBF     FILE(MEPPKGPF) TOFILE(MEPPKGPF) MBR(&BLNAME)
+             SNDPGMMSG  MSG('*** PACKAGE :' *BCAT &BLNAME *BCAT ', +
+                          DATE :' *BCAT &DATE *BCAT '***')
+/* 24/07/07  ALCOBJ     OBJ((OBJCODTBL *FILE *SHRRD))                */
+             CALL       PGM(CRTMEPPF) PARM(&DATE)
+/* 24/07/07  DLCOBJ     OBJ((OBJCODTBL *FILE *SHRRD))              +
+             MONMSG     MSGID(CPF1005)                               */
+
+             /* Suppression des Overrides                            */
+             DLTOVR     FILE(MEPPKGPF)
+             DLTOVR     FILE(OVRPKGPF)
+             /* Suppression du fichier BL                            */
+             DLTF       FILE(&BLNAME)
+             DLCOBJ     OBJ((&BLNAME *FILE *EXCL))
+             MONMSG     MSGID(CPF1005)
+
+             ENDPGM

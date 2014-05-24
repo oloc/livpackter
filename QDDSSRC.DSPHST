@@ -1,0 +1,72 @@
+     A                                      DSPSIZ(24 80 *DS3)
+     A                                      REF(*LIBL/MEPHSTPF)
+     A                                      INDARA
+     A                                      PRINT
+     A                                      CA03(03 'END OF JOB')
+     A                                      CA12(12 'END OF JOB')
+     A* Subfile Record Format *****************************************
+     A          R SUBFILE                   SFL
+     A                                      TEXT('Subfile Record')
+     A*                                     SFLNXTCHG
+     A            OPT            1A  B  7 13
+     A            BLNAME    R        O  7 17
+     A            MEPUSER   R        O  7 30
+     A            MEPDATE   R        O  7 43
+     A            MEPTIME   R        O  7 54
+     A            APP       R        O  7 66
+     A* Subfile Control-Recored Format ********************************
+     A          R CTLFILE                   SFLCTL(SUBFILE)
+     A                                      SFLSIZ(0016)
+     A                                      SFLPAG(0015)
+     A                                      TEXT('Subfile Control-Record')
+     A N91                                  ROLLUP(95 'Suite ...')
+     A N92                                  ROLLDOWN(96)
+     A                                      OVERLAY
+     A N70                                  SFLDSP
+     A N70                                  SFLDSPCTL
+     A  70                                  SFLCLR
+     A N70                                  ERASE(SUBFILE)
+     A  91                                  SFLEND(*MORE)
+     A  33                                  SFLMSG('Erreur' 33)
+     A            RECNUM         4S 0H      SFLRCDNBR
+     A                                  5 17'Package  :'
+     A                                      COLOR(WHT)
+     A                                  5 30'Utilisat.:'
+     A                                      COLOR(WHT)
+     A                                  5 43'Date   :'
+     A                                      COLOR(WHT)
+     A                                  5 54'Heure  :'
+     A                                      COLOR(WHT)
+     A                                  5 65'Cex :'
+     A                                      COLOR(WHT)
+     A* Head Format ***************************************************
+     A          R HEAD
+     A                                      TEXT('En-tête de page')
+     A                                      OVERLAY
+     A            TITRE         30A  O  1 26COLOR(WHT)
+     A                                  1 70SYSNAME
+     A                                  2 70TIME
+     A                                  3  2'1=Sélection 5=Détails -
+     A                                      6=Chronologie'
+     A                                      COLOR(BLU)
+     A* Foot Format ***************************************************
+     A          R FOOT
+     A                                      TEXT('Pied de page')
+     A                                      OVERLAY
+     A                                 23  2'F3=Exit F12=Cancel'
+     A                                      COLOR(BLU)
+     A* No record   ***************************************************
+     A          R NORCD
+     A                                      OVERLAY
+     A                                  5 17'Package  :'
+     A                                      COLOR(WHT)
+     A                                  5 30'Utilisat.:'
+     A                                      COLOR(WHT)
+     A                                  5 43'Date   :'
+     A                                      COLOR(WHT)
+     A                                  5 54'Heure  :'
+     A                                      COLOR(WHT)
+     A                                  5 65'Cex :'
+     A                                      COLOR(WHT)
+     A                                  9 25'Aucun enregistrement à afficher'
+     A                                      COLOR(RED)

@@ -1,0 +1,49 @@
+      * Modification du centieme de seconde si = 00 et MEPUSER, APP sont
+      * à blanc
+      * Ce programme est du ONE SHOT sur toutes les machines
+      *
+      * Programme appelant : MEPMAJP
+      * Programme appelé   :
+      *
+      * Hervé Esposito - ALTIQUE -   22/03/07
+      *
+      *****************************************************************
+      * Permet d'eviter de deboger les specif I et O
+     HOPTION(*NODEBUGIO: *SRCSTMT)
+      *
+     FMEPHSTPF  UF   E           K DISK
+      *
+     DTM               DS             8
+     DZ1                       1      6
+     DTMM                      7      8  0
+      *
+     IMEPHST
+     I              BLNAME                      BLHST
+     I              MEPDATE                     DATEHST
+     I              MEPTIME                     TIMEHST
+     I              APP                         APPHST
+     I              MEPUSER                     USERHST
+      *
+      *
+     C                   Z-ADD     *ZERO         NEWMM             2 0
+      *
+     C                   READ      MEPHSTPF                               70
+     C     *IN70         DOWEQ     *OFF
+     C     USERHST       IFNE      *BLANKS
+     C                   MOVEL     TIMEHST       TM
+     C     TMM           IFEQ      00
+     C                   Z-ADD     NEWMM         TMM
+     C     NEWMM         IFEQ      99
+     C                   Z-ADD     0             NEWMM
+     C                   ELSE
+     C                   ADD       1             NEWMM
+     C                   ENDIF
+     C                   MOVEL     TM            TIMEHST
+     C                   UPDATE    MEPHST
+     C                   ENDIF
+     C                   ENDIF
+     C                   READ      MEPHSTPF                               70
+     C                   ENDDO
+      *
+     C                   SETON                                        LR
+      *

@@ -1,0 +1,548 @@
+/*********************************************************************/
+/* Menu principal des mises en productions sur AS400. Partie entre   */
+/* le quai de livraison et la production. En manuel ou plannifié.    */
+/*                                                                   */
+/* Olivier Locard - Prolival 24/02/05                                */
+/* MOD OLOC 19/04/05 Prise en compte du paramètre Application        */
+/* MOD OLOC 06/12/05 Fusion de l'ensemble des historiques            */
+/* MOD OLOC 07/12/05 Prise en compte du CHGPWD                       */
+/* MOD OLOC 08/12/05 Modification des écrans                         */
+/* MOD OLOC 18/17/06 Ajout du redémarrage du Receiver                */
+/* MOD OLOC 22/02/07 Insertion de la prépa de BL en intéractif       */
+/* MOD OLOC 22/03/07 Ajout dans les cmd de DSPPGM et DSPFFD          */
+/* MOD OLOC 23/03/07 Mise en place du MEPMNUPWD de chgpwd            */
+/* MOD OLOC 26/03/07 Touches de fonctions sur tous les écrans        */
+/*********************************************************************/
+             PGM
+
+             DCL        VAR(&ANNEEC)    TYPE(*CHAR) LEN(2)
+             DCL        VAR(&MOISC)     TYPE(*CHAR) LEN(2)
+             DCL        VAR(&JOURC)     TYPE(*CHAR) LEN(2)
+             DCL        VAR(&MSGDTA)    TYPE(*CHAR) LEN(1024)
+             DCL        VAR(&MSGF)      TYPE(*CHAR) LEN(10)
+             DCL        VAR(&MSGID)     TYPE(*CHAR) LEN(7)
+             DCL        VAR(&NBRCURRCD) TYPE(*DEC) LEN(10 0)
+             DCL        VAR(&OPTION)    TYPE(*CHAR) LEN(2)
+
+             DCLF       FILE(MEPMNU)
+
+             /********************************************************/
+             /* On charge les informations dans la DTAARA MEPINF     */
+             /********************************************************/
+             CALL       PGM(UPDMEPINF) PARM(' ')
+
+/*********************************************************************/
+/* MAIN MENU                                                         */
+/*********************************************************************/
+ MEPMAIN:    CHGVAR     VAR(&MSG) VALUE(' ')
+             CHGVAR     VAR(&PKGNAM) VALUE(' ')
+             CHGVAR     VAR(&MEPDATE) VALUE(' ')
+ MEPMAIN2:   SNDF       RCDFMT(MASQUE)
+             SNDRCVF    RCDFMT(MEPMAIN)
+
+             CHGVAR     VAR(&MSG) VALUE(' ')
+             CHGVAR     VAR(&PKGNAM) VALUE(' ')
+             CHGVAR     VAR(&MEPDATE) VALUE(' ')
+
+             SELECT
+             WHEN       COND(&IN02) THEN(GOTO CMDLBL(TOOLS))
+             WHEN       COND(&IN03) THEN(GOTO CMDLBL(FIN))
+             WHEN       COND(&IN06) THEN(CALL PGM(MEPMNUPWD))
+             WHEN       COND(&IN09) THEN(GOTO CMDLBL(HISTORICS))
+             WHEN       COND(&IN12) THEN(GOTO CMDLBL(MEPMAIN))
+             WHEN       COND(&IN50) THEN(GOTO CMDLBL(HISTORICS))
+
+             WHEN       COND(&CHOIX *EQ 1) THEN(GOTO CMDLBL(PKGLIV))
+             WHEN       COND(&CHOIX *EQ 2) THEN(GOTO CMDLBL(MEPPLAN))
+             WHEN       COND(&CHOIX *EQ 4) THEN(GOTO CMDLBL(PKGDLT))
+             WHEN       COND(&CHOIX *EQ 5) THEN(GOTO CMDLBL(SCDDLT))
+             WHEN       COND(&CHOIX *EQ 7) THEN(GOTO CMDLBL(PKGBKP))
+             ENDSELECT
+
+             GOTO       CMDLBL(MEPMAIN)
+
+/*********************************************************************/
+/* HISTORICS MENU - MENU DES HISTORIQUES                                */
+/*********************************************************************/
+ HISTORICS:  CHGVAR     VAR(&MSG) VALUE(' ')
+             CHGVAR     VAR(&PKGNAM) VALUE(' ')
+             CHGVAR     VAR(&MEPDATE) VALUE(' ')
+ HISTORICS2: SNDF       RCDFMT(MASQUE)
+             SNDRCVF    RCDFMT(HISTORICS)
+
+             CHGVAR     VAR(&MSG) VALUE(' ')
+             CHGVAR     VAR(&PKGNAM) VALUE(' ')
+             CHGVAR     VAR(&MEPDATE) VALUE(' ')
+
+             SELECT
+             WHEN       COND(&IN02) THEN(GOTO CMDLBL(TOOLS))
+             WHEN       COND(&IN03) THEN(GOTO CMDLBL(FIN))
+             WHEN       COND(&IN06) THEN(CALL PGM(MEPMNUPWD))
+             WHEN       COND(&IN09) THEN(GOTO CMDLBL(HISTORICS))
+             WHEN       COND(&IN12) THEN(GOTO CMDLBL(MEPMAIN))
+             WHEN       COND(&IN50) THEN(GOTO CMDLBL(TOOLS))
+             WHEN       COND(&IN60) THEN(GOTO CMDLBL(MEPMAIN))
+             OTHERWISE  CMD(DO)
+             CHGVAR     VAR(&OPTION) VALUE(&CHOIX)
+             CALL       PGM(DSPHST) PARM(&OPTION)
+             ENDDO
+             ENDSELECT
+
+             GOTO       CMDLBL(HISTORICS)
+
+/*********************************************************************/
+/* MENU TOOLS                                                        */
+/*********************************************************************/
+ TOOLS:      CHGVAR     VAR(&MSG) VALUE(' ')
+             CHGVAR     VAR(&PKGNAM) VALUE(' ')
+             CHGVAR     VAR(&MEPDATE) VALUE(' ')
+ TOOLS2:     SNDF       RCDFMT(MASQUE)
+             SNDRCVF    RCDFMT(TOOLS)
+
+             CHGVAR     VAR(&MSG) VALUE(' ')
+             CHGVAR     VAR(&PKGNAM) VALUE(' ')
+             CHGVAR     VAR(&MEPDATE) VALUE(' ')
+
+             SELECT
+             WHEN       COND(&IN02) THEN(GOTO CMDLBL(TOOLS))
+             WHEN       COND(&IN03) THEN(GOTO CMDLBL(FIN))
+             WHEN       COND(&IN06) THEN(CALL PGM(MEPMNUPWD))
+             WHEN       COND(&IN09) THEN(GOTO CMDLBL(HISTORICS))
+             WHEN       COND(&IN12) THEN(GOTO CMDLBL(MEPMAIN))
+             WHEN       COND(&IN60) THEN(GOTO CMDLBL(HISTORICS))
+             WHEN       COND(&IN06) THEN(CALL PGM(MEPMNUPWD))
+
+             /*** 1. Visualisation d'un package                    ***/
+             WHEN       COND(&CHOIX *EQ 1) THEN(GOTO CMDLBL(PKGDSP))
+             /*** 2. Remise en traitement d'un package             ***/
+             WHEN       COND(&CHOIX *EQ 2) THEN(GOTO CMDLBL(BKPDLV))
+             /*** 3. Redémarrage du MKS Receiver                   ***/
+             WHEN       COND(&CHOIX *EQ 5) THEN(SBMJOB CMD(CALL +
+                          PGM(SDMIR/STRIMCOM)) JOB(STRIMCOM) +
+                          USER(MWIPROD))
+             /*** 7. Commandes iSeries                             ***/
+             WHEN       COND(&CHOIX *EQ 7) THEN(GOTO CMDLBL(COMMANDES))
+             /*** 9. Initialisation du Livpackter                  ***/
+             WHEN       COND(&CHOIX *EQ 9) THEN(GOTO CMDLBL(INI))
+             ENDSELECT
+
+             GOTO       CMDLBL(TOOLS)
+
+/*********************************************************************/
+/* Livraison Immédiate                                               */
+/*********************************************************************/
+ PKGLIV:     CHGVAR     VAR(&PKGNAM) VALUE(' ')
+             CHGVAR     VAR(&MSG)    VALUE(' ')
+ PKGLIV2:    SNDF       RCDFMT(MASQUE)
+             SNDRCVF    RCDFMT(PKGLIV)
+
+             /* Gestion des touches de fonctions                     */
+             IF         COND(&IN02) THEN(GOTO CMDLBL(TOOLS))
+             IF         COND(&IN03) THEN(GOTO CMDLBL(FIN))
+             IF         COND(&IN06) THEN(CALL MEPMNUPWD)
+             IF         COND(&IN09) THEN(GOTO HISTORICS)
+             IF         COND(&IN12) THEN(GOTO CMDLBL(MEPMAIN))
+
+             /* En cas de F04                                        */
+             IF         COND(&IN04) THEN(DO)
+             CALL       PGM(DSPPKGL)
+             OVRDBF     FILE(PKGLSTPF) TOFILE(PKGLSTWF)
+             CALL       PGM(DSPPKGL2) PARM(&PKGNAM)
+             DLTOVR     FILE(PKGLSTPF)
+             IF         COND(&PKGNAM *EQ 'ERROR') THEN(DO)
+             CHGVAR     VAR(&PKGNAM) VALUE(' ')
+             CHGVAR     VAR(&MSG) VALUE('Aucun package à lister')
+             GOTO       CMDLBL(PKGLIV)
+             ENDDO
+             GOTO       CMDLBL(PKGLIV2)
+             ENDDO      /* COND(&IN04) */
+
+
+             /********************************************************/
+             /* Avant tout vérification que le BL existe bien        */
+             /********************************************************/
+ PKGNONVIDE: IF         COND(&PKGNAM *NE ' ') THEN(DO)
+             CHKOBJ     OBJ(&PKGNAM) OBJTYPE(*FILE)
+             MONMSG     MSGID(CPF9801) EXEC(DO)
+             CHGVAR     VAR(&MSG) VALUE('Le package' *BCAT +
+                          &PKGNAM *BCAT 'ne peut être livré.')
+             GOTO       CMDLBL(PKGLIV)
+             ENDDO
+
+             /********************************************************/
+             /* Vérification que le Bon de Livraison n'est pas vide  */
+             /********************************************************/
+             RTVMBRD    FILE(&PKGNAM) NBRCURRCD(&NBRCURRCD)
+             IF         COND(&NBRCURRCD *EQ 0) THEN(DO)
+             CHGVAR     VAR(&MSG) VALUE('Le bon de livraison' *BCAT +
+                          &PKGNAM *BCAT 'est vide.')
+             GOTO       CMDLBL(PKGLIV)
+             ENDDO
+
+             /********************************************************/
+             /* On charge les informations dans la DTAARA MEPINF     */
+             /********************************************************/
+             CALL       PGM(UPDMEPINF) PARM(&PKGNAM)
+
+             /********************************************************/
+             /* Vérification du bon paramétrage des CO               */
+             /********************************************************/
+             CALL       PGM(CHKOBJCOD) PARM(&PKGNAM)
+             MONMSG     MSGID(MEP1050) EXEC(DO)
+             RCVMSG     MSGTYPE(*LAST) MSG(&MSG) MSGID(&MSGID) +
+                          MSGF(&MSGF)
+             /* Envoi des différents messages                        */
+             CALL       PGM(WRNOBJCOD)
+             GOTO       CMDLBL(PKGLIV2)
+             ENDDO
+
+             /********************************************************/
+             /* Création du BL                                       */
+             /********************************************************/
+             CALL       PGM(CRTDLVPF) PARM(&PKGNAM)
+             /********************************************************/
+             /* Soumission du déploiement des objets                 */
+             /********************************************************/
+             CALL       PGM(EMGMEPSBM) PARM(&PKGNAM)
+             CHGVAR     VAR(&MSG) VALUE('La livraison du package' +
+                          *BCAT &PKGNAM *BCAT 'a été soumise.')
+             ENDDO      /* PKGNONVIDE */
+
+             GOTO       CMDLBL(PKGLIV)
+
+/*********************************************************************/
+/* Plannification de package                                         */
+/*********************************************************************/
+ MEPPLAN:    CHGVAR     VAR(&PKGNAM) VALUE(' ')
+             CHGVAR     VAR(&MSG)    VALUE(' ')
+ MEPPLAN2:   SNDF       RCDFMT(MASQUE)
+             SNDRCVF    RCDFMT(MEPPLAN)
+
+             /* Gestion des touches de fonctions                     */
+             IF         COND(&IN02) THEN(GOTO CMDLBL(TOOLS))
+             IF         COND(&IN03) THEN(GOTO CMDLBL(FIN))
+             IF         COND(&IN06) THEN(CALL MEPMNUPWD)
+             IF         COND(&IN09) THEN(GOTO HISTORICS)
+             IF         COND(&IN12) THEN(GOTO CMDLBL(MEPMAIN))
+             IF         COND(&IN03) THEN(GOTO CMDLBL(FIN))
+
+             /* En cas de F04                                        */
+             IF         COND(&IN04) THEN(DO)
+             CALL       PGM(DSPPKGL)
+             OVRDBF     FILE(PKGLSTPF) TOFILE(PKGLSTWF)
+             CALL       PGM(DSPPKGL2) PARM(&PKGNAM)
+             DLTOVR     FILE(PKGLSTPF)
+             IF         COND(&PKGNAM *EQ 'ERROR') THEN(DO)
+             CHGVAR     VAR(&PKGNAM) VALUE(' ')
+             CHGVAR     VAR(&MSG) VALUE('Aucun package à lister')
+             GOTO       CMDLBL(MEPPLAN)
+             ENDDO
+             GOTO       CMDLBL(MEPPLAN2)
+             ENDDO
+
+             IF         COND(&PKGNAM *NE ' ') THEN(DO)
+             CHKOBJ     OBJ(&PKGNAM) OBJTYPE(*FILE)
+             MONMSG     MSGID(CPF9801) EXEC(DO)
+             CHGVAR     VAR(&MSG) VALUE('Le package' *BCAT +
+                          &PKGNAM *BCAT 'ne peut être planifié.')
+             GOTO       CMDLBL(MEPPLAN)
+             ENDDO
+             CALL       PGM(SCDMEPSBM) PARM(&PKGNAM &ANNEE &MOIS +
+                          &JOUR)
+             CHGVAR     VAR(&ANNEEC) VALUE(&ANNEE)
+             CHGVAR     VAR(&MOISC) VALUE(&MOIS)
+             CHGVAR     VAR(&JOURC) VALUE(&JOUR)
+             CHGVAR     VAR(&MSG) VALUE('La plannification du +
+                          package' *BCAT &PKGNAM *BCAT 'au' *BCAT +
+                          &JOURC *TCAT '/' *TCAT &MOISC *TCAT '/' +
+                          *TCAT &ANNEEC *BCAT 'a été soumise')
+             ENDDO
+
+             GOTO       CMDLBL(MEPPLAN)
+
+/*********************************************************************/
+/* Suppression de package                                            */
+/*********************************************************************/
+ PKGDLT:     CHGVAR     VAR(&PKGNAM) VALUE(' ')
+             CHGVAR     VAR(&MSG)    VALUE(' ')
+ PKGDLT2:    SNDF       RCDFMT(MASQUE)
+             SNDRCVF    RCDFMT(PKGDLT)
+
+             /* Gestion des touches de fonctions                     */
+             IF         COND(&IN02) THEN(GOTO CMDLBL(TOOLS))
+             IF         COND(&IN03) THEN(GOTO CMDLBL(FIN))
+             IF         COND(&IN06) THEN(CALL MEPMNUPWD)
+             IF         COND(&IN09) THEN(GOTO HISTORICS)
+             IF         COND(&IN12) THEN(GOTO CMDLBL(MEPMAIN))
+             IF         COND(&IN03) THEN(GOTO CMDLBL(FIN))
+
+             /* En cas de F04                                        */
+             IF         COND(&IN04) THEN(DO)
+             CALL       PGM(DSPPKGL)
+             OVRDBF     FILE(PKGLSTPF) TOFILE(PKGLSTWF)
+             CALL       PGM(DSPPKGL2) PARM(&PKGNAM)
+             DLTOVR     FILE(PKGLSTPF)
+             IF         COND(&PKGNAM *EQ 'ERROR') THEN(DO)
+             CHGVAR     VAR(&PKGNAM) VALUE(' ')
+             CHGVAR     VAR(&MSG) VALUE('Aucun package à lister')
+             GOTO       CMDLBL(PKGDLT)
+             ENDDO
+             GOTO       CMDLBL(PKGDLT2)
+             ENDDO
+
+             IF         COND(&PKGNAM *NE ' ') THEN(DO)
+             CHKOBJ     OBJ(&PKGNAM) OBJTYPE(*FILE)
+             MONMSG     MSGID(CPF9801) EXEC(DO)
+             CHGVAR     VAR(&MSG) VALUE('Le package' *BCAT &PKGNAM +
+                          *BCAT 'ne peut être supprimé.')
+             GOTO       CMDLBL(PKGDLT)
+             ENDDO
+
+             /* Mise à jour de la Data area                          */
+             CALL       PGM(UPDMEPINF) PARM(&PKGNAM)
+             /* Historisation du début de la suppression             */
+             CALL       PGM(UPDHST) PARM('DLT0100' &PKGNAM)
+             /* Sauvegarde des détails du package                    */
+             CALL       PGM(CRTDLVPF) PARM(&PKGNAM)
+             /* Historisation de la fin de la suppression            */
+             CALL       PGM(UPDHST) PARM('DLT0200' &PKGNAM)
+             /* Annonce à l'utilisateur                              */
+             CHGVAR     VAR(&MSG) VALUE('Le package' *BCAT &PKGNAM +
+                          *BCAT 'a été supprimé.')
+             ENDDO
+
+             GOTO       CMDLBL(PKGDLT)
+
+/*********************************************************************/
+/* Suppression de plannification                                     */
+/*********************************************************************/
+ SCDDLT:     CHGVAR     VAR(&PKGNAM) VALUE(' ')
+             CHGVAR     VAR(&MSG)    VALUE(' ')
+ SCDDLT2:    SNDF       RCDFMT(MASQUE)
+             SNDRCVF    RCDFMT(SCDDLT)
+
+             /* Gestion des touches de fonctions                     */
+             IF         COND(&IN02) THEN(GOTO CMDLBL(TOOLS))
+             IF         COND(&IN03) THEN(GOTO CMDLBL(FIN))
+             IF         COND(&IN06) THEN(CALL MEPMNUPWD)
+             IF         COND(&IN09) THEN(GOTO HISTORICS)
+             IF         COND(&IN12) THEN(GOTO CMDLBL(MEPMAIN))
+             IF         COND(&IN03) THEN(GOTO CMDLBL(FIN))
+
+             /* En cas de F04                                        */
+             IF         COND(&IN04) THEN(DO)
+             IF         COND(&PKGNAM *EQ 'ERROR') THEN(DO)
+             CHGVAR     VAR(&PKGNAM) VALUE(' ')
+             CHGVAR     VAR(&MSG) VALUE('Aucun package à lister')
+             GOTO       CMDLBL(SCDDLT)
+             ENDDO
+             GOTO       CMDLBL(SCDDLT2)
+             ENDDO
+
+             IF         COND(&PKGNAM *NE ' ') THEN(DO)
+             CHKOBJ     OBJ(MEPPKGPF) OBJTYPE(*FILE) MBR(&PKGNAM)
+             MONMSG     MSGID(CPF9815) EXEC(DO)
+             CHGVAR     VAR(&MSG) VALUE('Le package' *BCAT +
+                          &PKGNAM *BCAT 'n''a été ni livré ni +
+                          planifié.')
+             GOTO       CMDLBL(SCDDLT)
+             ENDDO
+             CALL       PGM(DLTSCDMEP) PARM(&PKGNAM &MEPDATE)
+             CHGVAR     VAR(&PKGNAM) VALUE(' ')
+             CHGVAR     VAR(&MEPDATE) VALUE(' ')
+             ENDDO
+
+             GOTO       CMDLBL(SCDDLT)
+
+/*********************************************************************/
+/* Retour arrière sur un package                                     */
+/*********************************************************************/
+ PKGBKP:     CHGVAR     VAR(&PKGNAM) VALUE(' ')
+             CHGVAR     VAR(&MSG)    VALUE(' ')
+ PKGBKP2:    SNDF       RCDFMT(MASQUE)
+             SNDRCVF    RCDFMT(PKGBKP)
+
+ /*          CHGVAR     VAR(&PKGNAM) VALUE(' ')                      */
+             CHGVAR     VAR(&MSG)    VALUE(' ')
+
+             /* Gestion des touches de fonctions                     */
+             IF         COND(&IN02) THEN(GOTO CMDLBL(TOOLS))
+             IF         COND(&IN03) THEN(GOTO CMDLBL(FIN))
+             IF         COND(&IN06) THEN(CALL MEPMNUPWD)
+             IF         COND(&IN09) THEN(GOTO HISTORICS)
+             IF         COND(&IN12) THEN(GOTO CMDLBL(MEPMAIN))
+             IF         COND(&IN03) THEN(GOTO CMDLBL(FIN))
+
+             /* En cas de F04                                        */
+             IF         COND(&IN04) THEN(DO)
+             CALL       PGM(UPDPKGINF) PARM(' ')
+             CALL       PGM(DSPHST) PARM('01')
+             RTVDTAARA  DTAARA(MEPINF (1 10)) RTNVAR(&PKGNAM)
+             IF COND(&PKGNAM *EQ ' ') THEN(DO)
+             RTVMSG     MSGID(CHK1001) MSGF(MEPMSGF) MSG(&MSG)
+             GOTO       CMDLBL(PKGBKP2)
+             ENDDO
+             GOTO       CMDLBL(PKGBKP2)
+             ENDDO
+
+             IF         COND(&PKGNAM *NE ' ') THEN(DO)
+             CHKOBJ     OBJ(MEPPKGPF) OBJTYPE(*FILE) MBR(&PKGNAM)
+             MONMSG     MSGID(CPF9815) EXEC(DO)
+             CHGVAR     VAR(&MSG) VALUE('Le package' *BCAT +
+                          &PKGNAM *BCAT 'n''a été ni livré ni +
+                          planifié.')
+             GOTO       CMDLBL(PKGBKP)
+             ENDDO
+             CALL       PGM(MEPBKPSBM) PARM(&PKGNAM)
+             CHGVAR     VAR(&MSG) VALUE('Le retour arrière du +
+                          package' *BCAT &PKGNAM *BCAT 'a été soumis.')
+             ENDDO
+
+             GOTO       CMDLBL(PKGBKP)
+
+/*********************************************************************/
+/* Visualisation d'un package                                        */
+/*********************************************************************/
+ PKGDSP:     CHGVAR     VAR(&PKGNAM) VALUE(' ')
+             CHGVAR     VAR(&MSG)    VALUE(' ')
+ PKGDSP2:    SNDF       RCDFMT(MASQUE)
+             SNDRCVF    RCDFMT(PKGDSP)
+
+             /* Gestion des touches de fonctions                     */
+             IF         COND(&IN02) THEN(GOTO CMDLBL(TOOLS))
+             IF         COND(&IN03) THEN(GOTO CMDLBL(FIN))
+             IF         COND(&IN06) THEN(CALL MEPMNUPWD)
+             IF         COND(&IN09) THEN(GOTO HISTORICS)
+             IF         COND(&IN12) THEN(GOTO CMDLBL(MEPMAIN))
+             IF         COND(&IN03) THEN(GOTO CMDLBL(FIN))
+
+             /* En cas de F04                                        */
+             IF         COND(&IN04) THEN(DO)
+             CALL       PGM(DSPPKGTLS)
+             OVRDBF     FILE(PKGLSTPF) TOFILE(PKGLSTWF)
+             CALL       PGM(DSPPKGL2) PARM(&PKGNAM)
+             DLTOVR     FILE(PKGLSTPF)
+             IF         COND(&PKGNAM *EQ 'ERROR') THEN(DO)
+             CHGVAR     VAR(&PKGNAM) VALUE(' ')
+             CHGVAR     VAR(&MSG) VALUE('Aucun package à lister')
+             GOTO       CMDLBL(PKGDSP)
+             ENDDO
+             GOTO       CMDLBL(PKGDSP2)
+             ENDDO
+
+goto shoot
+             IF         COND(&PKGNAM *NE ' ') THEN(DO)
+             CHKOBJ     OBJ(MEPPKGPF) OBJTYPE(*FILE) MBR(&PKGNAM)
+             MONMSG     MSGID(CPF9815) EXEC(DO)
+             CHGVAR     VAR(&MSG) VALUE('Le package' *BCAT &PKGNAM +
+                          *BCAT 'ne peut être visualisé.')
+             GOTO       CMDLBL(PKGDSP)
+             ENDDO
+shoot:
+             CALL       PGM(DSPPKG) PARM(&PKGNAM)
+             ENDDO
+
+             GOTO       CMDLBL(PKGDSP)
+
+/*********************************************************************/
+/* Remise en traitement d'un package                                 */
+/*********************************************************************/
+ BKPDLV:     CHGVAR     VAR(&PKGNAM) VALUE(' ')
+             CHGVAR     VAR(&MSG)    VALUE(' ')
+ BKPDLV2:    SNDF       RCDFMT(MASQUE)
+             SNDRCVF    RCDFMT(BKPDLV)
+
+             /* Gestion des touches de fonctions                     */
+             IF         COND(&IN02) THEN(GOTO CMDLBL(TOOLS))
+             IF         COND(&IN03) THEN(GOTO CMDLBL(FIN))
+             IF         COND(&IN06) THEN(CALL MEPMNUPWD)
+             IF         COND(&IN09) THEN(GOTO HISTORICS)
+             IF         COND(&IN12) THEN(GOTO CMDLBL(MEPMAIN))
+
+             /* En cas de F04                                        */
+             IF         COND(&IN04) THEN(DO)
+             CALL       PGM(DSPPKGTLS)
+             OVRDBF     FILE(PKGLSTPF) TOFILE(PKGLSTWF)
+             CALL       PGM(DSPPKGL2) PARM(&PKGNAM)
+             DLTOVR     FILE(PKGLSTPF)
+             IF         COND(&PKGNAM *EQ 'ERROR') THEN(DO)
+             CHGVAR     VAR(&PKGNAM) VALUE(' ')
+             CHGVAR     VAR(&MSG) VALUE('Aucun package à lister')
+             GOTO       CMDLBL(BKPDLV)
+             ENDDO
+             GOTO       CMDLBL(BKPDLV2)
+             ENDDO
+
+             IF         COND(&PKGNAM *NE ' ') THEN(DO)
+             CHKOBJ     OBJ(MEPPKGPF) OBJTYPE(*FILE) MBR(&PKGNAM)
+             MONMSG     MSGID(CPF9815) EXEC(DO)
+             CHGVAR     VAR(&MSG) VALUE('Le package' *BCAT &PKGNAM +
+                          *BCAT 'ne peut être remis en traitement.')
+             GOTO       CMDLBL(BKPDLV)
+             ENDDO
+             CALL       PGM(BKPDLVPF) PARM(&PKGNAM)
+             CHGVAR     VAR(&MSG) VALUE('La remise en traitement du +
+                          package' *BCAT &PKGNAM *BCAT 'a été +
+                          effectuée.')
+             ENDDO
+
+             GOTO       CMDLBL(BKPDLV)
+
+/*********************************************************************/
+/* MENU DES COMMANDES ISERIES                                        */
+/*********************************************************************/
+ COMMANDES:
+ COMMANDES2: SNDF       RCDFMT(MASQUE)
+             SNDRCVF    RCDFMT(CMD)
+
+             CHGVAR     VAR(&MSG) VALUE(' ')
+
+             SELECT
+             WHEN       COND(&IN02) THEN(GOTO CMDLBL(TOOLS))
+             WHEN       COND(&IN03) THEN(GOTO CMDLBL(FIN))
+             WHEN       COND(&IN06) THEN(CALL PGM(MEPMNUPWD))
+             WHEN       COND(&IN09) THEN(GOTO CMDLBL(HISTORICS))
+             WHEN       COND(&IN12) THEN(GOTO CMDLBL(TOOLS))
+             WHEN       COND(&IN60) THEN(GOTO CMDLBL(HISTORICS))
+
+             OTHERWISE  CMD(DO)
+             CHGVAR     VAR(&OPTION) VALUE(&CHOIXCMD)
+             CALL       PGM(MEPMNUCMD) PARM(&OPTION)
+             MONMSG     MSGID(CPF0000)
+             RCVMSG     MSGTYPE(*LAST) MSG(&MSG) MSGDTA(&MSGDTA) +
+                          MSGID(&MSGID) MSGF(&MSGF)
+             IF         COND(&MSGID *NE ' ') THEN(DO)
+             SNDPGMMSG  MSGID(&MSGID) MSGF(&MSGF) MSGDTA(&MSGDTA)
+             ENDDO
+             ENDDO
+             ENDSELECT
+
+             GOTO       CMDLBL(COMMANDES)
+
+
+/*********************************************************************/
+/* MENU D'initialisation du Livpackter                               */
+/*********************************************************************/
+ INI:        CHGVAR     VAR(&REPONSE) VALUE('NON')
+ INI2:       SNDF       RCDFMT(MASQUE)
+             SNDRCVF    RCDFMT(INI)
+
+             CHGVAR     VAR(&MSG) VALUE(' ')
+
+             /* Gestion des touches de fonction                      */
+             IF         COND(&IN02) THEN(GOTO CMDLBL(TOOLS))
+             IF         COND(&IN03) THEN(GOTO CMDLBL(FIN))
+             IF         COND(&IN06) THEN(CALL MEPMNUPWD)
+             IF         COND(&IN07) THEN(GOTO CMDLBL(VALID))
+             IF         COND(&IN09) THEN(GOTO HISTORICS)
+             IF         COND(&IN12) THEN(GOTO CMDLBL(TOOLS))
+
+             GOTO       CMDLBL(INI)
+
+ VALID:      IF         COND((&REPONSE *EQ 'OUI') *OR (&REPONSE *EQ +
+                          'oui')) THEN(DO)
+             CALL       PGM(MEPINISBM)
+             ENDDO
+             GOTO       CMDLBL(INI)
+
+ FIN:        ENDPGM

@@ -1,0 +1,57 @@
+/*********************************************************************/
+/* Récupération des anciennes données dans la *LIB tampon            */
+/* Réinjection de ces données dans le fichier nouvellement livré.    */
+/*                                                                   */
+/* Olivier Locard - Prolival - 09/05/05                              */
+/* MOD OLOC 25/01/06 : Ajout du CPF2963, on Ignore les cpyf qd aucun */
+/* des champs n'est identique entre l'ancien et le nouveau PF. On ne */
+/* procède pas à un cpyf en *nochk à la place (comme Implementer).   */
+/* MOD OLOC 25/01/06 : Ajout du CPF2817 qui se déclenche après un    */
+/* 2963. Si la copie se passe mal, ce sera pour une autre raison dc  */
+/* un msg en escape (tout comme le 2963) se mettra en message.       */
+/*********************************************************************/
+             PGM        PARM(&LIBNAM &MBONAM)
+
+             DCL        VAR(&LIBNAM) TYPE(*CHAR) LEN(10)
+             DCL        VAR(&MBONAM) TYPE(*CHAR) LEN(10)
+             DCL        VAR(&TMPLIB) TYPE(*CHAR) LEN(10)
+
+             DCL        VAR(&RCD) TYPE(*DEC) LEN(10 0)
+
+             DCLF       FILE(QAFDMBRL)
+
+             /* Récupération du nom de la lib tampon                 */
+             RTVDTAARA  DTAARA(MEPPRM (1 10)) RTNVAR(&TMPLIB)
+
+             /* Création de la liste des membres du fichier          */
+             CHKOBJ     OBJ(&TMPLIB/&MBONAM) OBJTYPE(*FILE)
+             MONMSG     MSGID(CPF9801) EXEC(DO)
+             SNDPGMMSG  MSG('**** Fichier' *BCAT &MBONAM *BCAT 'de +
+                          la bibliothèque' *BCAT &TMPLIB *BCAT 'non +
+                          trouvé.')
+             GOTO       CMDLBL(FINBOUCLE)
+             ENDDO
+             DLTF       FILE(QTEMP/QDSPFD)
+             MONMSG     MSGID(CPF0000)
+             DSPFD      FILE(&TMPLIB/&MBONAM) TYPE(*MBRLIST) +
+                          OUTPUT(*OUTFILE) OUTFILE(QTEMP/QDSPFD)
+             OVRDBF     FILE(QAFDMBRL) TOFILE(QDSPFD)
+
+ BOUCLE:     RCVF
+             MONMSG     MSGID(CPF0864) EXEC(GOTO CMDLBL(FINBOUCLE))
+
+             /* Vérification que le membre n'est pas vide            */
+             CALL       PGM(RTNRCDMBR) PARM(&TMPLIB &MBONAM &MLNAME +
+                          &RCD)
+             IF         COND(&RCD *EQ 0) THEN(GOTO CMDLBL(BOUCLE))
+             /* Récupération des anciennes données par CPYF          */
+             CPYF       FROMFILE(&TMPLIB/&MBONAM) +
+                          TOFILE(&LIBNAM/&MBONAM) FROMMBR(&MLNAME) +
+                          TOMBR(&MLNAME) MBROPT(*REPLACE) +
+                          CRTFILE(*YES) FMTOPT(*MAP *DROP)
+             MONMSG     MSGID(CPF2869 CPF2963 CPF2817)
+
+             GOTO       CMDLBL(BOUCLE)
+ FINBOUCLE:
+
+             ENDPGM

@@ -1,0 +1,14 @@
+     H**********************************************************************
+     H* Mise à jour du fichier des objets alloués
+     H*
+     H* Olivier Locard - Prolival - 28/12/05
+     H**********************************************************************
+     FOBJLCKPF  UF A E           K DISK    RENAME(OBJLCK:OBJLCKR)
+     C     *ENTRY        PLIST
+     C                   PARM                    OBJ              10
+     C                   PARM                    LIB              10
+     C                   PARM                    OBJTYPE           7
+     C*
+     C                   WRITE     OBJLCKR
+     C                   CLOSE     OBJLCKPF
+     C                   SETON                                            LR
